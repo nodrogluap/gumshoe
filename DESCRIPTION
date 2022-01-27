@@ -5,8 +5,8 @@ Authors@R: person("Paul", "Gordon", email = "nodrogluap@gmail.com", role = c("au
 Description: What the package does (one paragraph).
 Depends: 
 	R (>= 3.6.1),
-	ggfortify
-	dplyr
+	ggfortify,
+	dplyr,
 	sleuth (>= 0.29.0)
 Remotes:
 	sinhrks/ggfortify
@@ -15,3 +15,11 @@ Remotes:
 License: GPL v3
 Encoding: UTF-8
 LazyData: true
+Suggests: 
+    roxygen2,
+    rmarkdown,
+    knitr,
+    testthat (>= 3.0.0)
+VignetteBuilder: knitr
+RoxygenNote: 7.1.2
+Config/testthat/edition: 3

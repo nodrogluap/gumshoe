@@ -1,2 +1,2 @@
 # gumshoe
-Convenience helper functions for Kallisto/Sleuth analysis
+Supplemental Statistical Tests and Utilities for Kallisto/Sleuth RNASeq Analysis

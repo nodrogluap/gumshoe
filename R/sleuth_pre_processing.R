@@ -38,23 +38,23 @@
 #' # create a sleuth object that has been processed using sleuth_prep() followed by sleuth_fit()
 #' sleuth_interpret(analysis_data)
 sleuth_interpret <- function(data) {
-    for (metadata_file_number in 1:length(data$metadata_name)) {
-      metadata_file <- data.frame(data[metadata_file_number, 2])
-      metadata_model_names <- unlist(strsplit(data$model_name[metadata_file_number], ","))
-      metadata_model_formula <- unlist(strsplit(data$model_data[metadata_file_number], ","))
+  for (metadata_file_number in 1:length(data$metadata_name)) {
+    metadata_file <- data.frame(data[metadata_file_number, 2])
+    metadata_model_names <- unlist(strsplit(data$model_name[metadata_file_number], ","))
+    metadata_model_formula <- unlist(strsplit(data$model_data[metadata_file_number], ","))
 
-      for (metadata_model_number in 1:length(metadata_model_names)) {
-        so_holder_variable <- sleuth_prep(metadata_file,
-                                          as.formula(metadata_model_formula[metadata_model_number]),
-                                          num_cores = 1)
-        so_holder_variable <- sleuth_fit(so_holder_variable)
+    for (metadata_model_number in 1:length(metadata_model_names)) {
+      so_holder_variable <- sleuth_prep(metadata_file,
+                                        as.formula(metadata_model_formula[metadata_model_number]),
+                                        num_cores = 1)
+      so_holder_variable <- sleuth_fit(so_holder_variable)
 
-        sleuth_obj_name <- paste("so", metadata_model_names[metadata_model_number], sep = "_")
+      sleuth_obj_name <- paste("so", metadata_model_names[metadata_model_number], sep = "_")
 
-        assign(sleuth_obj_name, so_holder_variable, envir = .GlobalEnv)
-      }
+      assign(sleuth_obj_name, so_holder_variable, envir = .GlobalEnv)
     }
   }
+}
 
 #' Automated function to run all possible Wald tests on a given Sleuth object and the fitted model
 #'
@@ -65,18 +65,18 @@ sleuth_interpret <- function(data) {
 #' # Given a Sleuth object, run a Wald test on all possible models as determined on the formula used to run sleuth_prep()
 #' sleuth_test_wt(so)
 sleuth_test_wt <- function(sleuth_obj) {
-    sleuth_obj_name <- deparse(substitute(sleuth_obj))
+  sleuth_obj_name <- deparse(substitute(sleuth_obj))
 
-    coeff <- colnames(sleuth_obj$design_matrix)
+  coeff <- colnames(sleuth_obj$design_matrix)
 
-    for (model in coeff) {
-      if (model != "(Intercept)") {
-        sleuth_obj <- sleuth_wt(sleuth_obj, model)
+  for (model in coeff) {
+    if (model != "(Intercept)") {
+      sleuth_obj <- sleuth_wt(sleuth_obj, model)
 
-        assign(sleuth_obj_name, sleuth_obj, envir = .GlobalEnv)
-      }
+      assign(sleuth_obj_name, sleuth_obj, envir = .GlobalEnv)
     }
   }
+}
 
 #' Automated function to run all possible Likewise Ratio tests on a given Sleuth object with models derived from the original formula used to run sleuth_fit()
 #'
@@ -88,35 +88,36 @@ sleuth_test_wt <- function(sleuth_obj) {
 #' # Given a Sleuth object, run a Likewise Ratio test on all possible models derived from the original formula used to run sleuth_prep()
 #' sleuth_test_lrt(so)
 sleuth_test_lrt <- function(sleuth_obj) {
-    sleuth_obj_name <- deparse(substitute(sleuth_obj))
+  sleuth_obj_name <- deparse(substitute(sleuth_obj))
 
-    formula_variables <- sleuth_obj$full_formula
-    formula_variables <- all.vars(formula_variables)
+  formula_variables <- sleuth_obj$full_formula
+  formula_variables <- all.vars(formula_variables)
 
-    for (model in formula_variables) {
-      remaining_variables <- paste(formula_variables[-(match(model, formula_variables))], collapse = "_")
-      remaining_variables <- paste("no", remaining_variables, sep = "_")
+  for (model in formula_variables) {
+    remaining_variables <- paste(formula_variables[-(match(model, formula_variables))], collapse = "_")
+    remaining_variables <- paste("no", remaining_variables, sep = "_")
 
-      model <- paste("~", model, sep = "")
+    model <- paste("~", model, sep = "")
 
-      sleuth_obj <- sleuth_fit(sleuth_obj, as.formula(model), fit_name = remaining_variables)
-      sleuth_obj <- sleuth_lrt(sleuth_obj, remaining_variables, "full")
-      assign(sleuth_obj_name, sleuth_obj, envir = .GlobalEnv)
-    }
+    sleuth_obj <- sleuth_fit(sleuth_obj, as.formula(model), fit_name = remaining_variables)
+    sleuth_obj <- sleuth_lrt(sleuth_obj, remaining_variables, "full")
+    assign(sleuth_obj_name, sleuth_obj, envir = .GlobalEnv)
   }
+}
 
-#' Retrieve all target id's for a given data frame with a FDR <.05
+#' Retrieve all target id's for a given data frame with a FDR less than the selected cutoff. Default cutoff value is .05.
 #'
 #' @param sleuth_res A data frame generated following running sleuth_results
+#' @param q_cutoff The selected FDR cutoff value. Default is .05.
 #'
 #' @return A list of target id's.
 #' @export
 #' @examples
-#' # Given a Sleuth object, run a Likewise Ratio test on all possible models derived from the original formula used to run sleuth_prep
-#' f05(wald_test_results)
-f05 <- function(sleuth_res) {
-    sleuth_res[which(sleuth_res$q < .05), ]
-  }
+#' # Given a Sleuth object, return a data frame of all target id's with an FDR less than the cutoff value
+#' fdr_cutoff(wald_test_results)
+fdr_cutoff <- function(sleuth_res, q_cutoff = .05){
+  sleuth_res[which(sleuth_res$q<q_cuttoff), ]
+}
 
 #' Retrieve all results from a given Sleuth object following statistical testing
 #'
@@ -129,95 +130,88 @@ f05 <- function(sleuth_res) {
 #' # Given a Sleuth object and Boolean values of tests to run, perform the requested tests on all possible models for the given Sleuth object
 #' sleuth_object_result(so, test = "lrt")
 sleuth_object_result <- function(sleuth_obj, test = "wt") {
-    coeff <- colnames(sleuth_obj$design_matrix)
-    sleuth_obj_name <- deparse(substitute(sleuth_obj))
-    sleuth_obj_name <- unlist(strsplit(sleuth_obj_name, "_"))
-    sleuth_obj_name <- paste(sleuth_obj_name[c(2:length(sleuth_obj_name))], collapse = "_")
+  coeff <- colnames(sleuth_obj$design_matrix)
+  sleuth_obj_name <- deparse(substitute(sleuth_obj))
+  sleuth_obj_name <- unlist(strsplit(sleuth_obj_name, "_"))
+  sleuth_obj_name <- paste(sleuth_obj_name[c(2:length(sleuth_obj_name))], collapse = "_")
 
-    if (test == "wt") {
-      sig_target_ids <- NA
-      sig_results <- NA
-      for (model in coeff) {
-        if (model != "(Intercept)") {
-          wald_result <- sleuth_results(sleuth_obj, model, test_type = 'wt')
-          rownames(wald_result) <- wald_result$target_id
+  if (test == "wt") {
+    sig_target_ids <- NA
+    sig_results <- NA
+    for (model in coeff) {
+      if (model != "(Intercept)") {
+        wald_result <- sleuth_results(sleuth_obj, model, test_type = 'wt')
+        rownames(wald_result) <- wald_result$target_id
 
-          sig_target_ids <- unique(c(f05(wald_result), sig_target_ids))
+        sig_target_ids <- unique(c(f05(wald_result), sig_target_ids))
 
-          wald_model_name <- paste("wald", sleuth_obj_name, sep = "_")
-          wald_model_name <- paste(wald_model_name, model, sep = "_")
-          assign(wald_model_name, wald_result, envir = .GlobalEnv)
-        }
+        wald_model_name <- paste("wald", sleuth_obj_name, sep = "_")
+        wald_model_name <- paste(wald_model_name, model, sep = "_")
+        assign(wald_model_name, wald_result, envir = .GlobalEnv)
       }
-
-      for (model in coeff) {
-        if (model != "(Intercept)") {
-          sig_results <- c(wald_result[sig_target_ids, ], sig_results)
-        }
-      }
-      sig_results <- sig_results[1:(length(sig_results) - 1)]
-      wald_sig_name <- paste("wald_sig_results", sleuth_obj_name, sep = "_")
-      assign(wald_sig_name, sig_results, envir = .GlobalEnv)
     }
 
-    if (test == "lrt") {
-      sig_target_ids <- NA
-      sig_results <- NA
-      for (model in names(sleuth_obj$tests[['lrt']])) {
-        lrt_result <- sleuth_results(sleuth_obj, model, test_type = 'lrt')
-        rownames(lrt_result) <- lrt_result$target_id
-
-        sig_target_ids <- unique(c(f05(lrt_result), sig_target_ids))
-
-        lrt_model_name <- paste("lrt", sleuth_obj_name, sep = "_")
-        lrt_model_name <- paste(lrt_model_name, model, sep = "_")
-        assign(lrt_model_name, lrt_result, envir = .GlobalEnv)
+    for (model in coeff) {
+      if (model != "(Intercept)") {
+        sig_results <- c(wald_result[sig_target_ids, ], sig_results)
       }
-      for (model in names(sleuth_obj$tests[['lrt']])) {
-        sig_results <- c(lrt_result[sig_target_ids, ], sig_results)
-      }
-      sig_results <- sig_results[1:(length(sig_results) - 1)]
-      lrt_sig_name <- paste("lrt_sig_results", sleuth_obj_name, sep = "_")
-      assign(lrt_sig_name, sig_results, envir = .GlobalEnv)
     }
+    sig_results <- sig_results[1:(length(sig_results) - 1)]
+    wald_sig_name <- paste("wald_sig_results", sleuth_obj_name, sep = "_")
+    assign(wald_sig_name, sig_results, envir = .GlobalEnv)
   }
+
+  if (test == "lrt") {
+    sig_target_ids <- NA
+    sig_results <- NA
+    for (model in names(sleuth_obj$tests[['lrt']])) {
+      lrt_result <- sleuth_results(sleuth_obj, model, test_type = 'lrt')
+      rownames(lrt_result) <- lrt_result$target_id
+
+      sig_target_ids <- unique(c(f05(lrt_result), sig_target_ids))
+
+      lrt_model_name <- paste("lrt", sleuth_obj_name, sep = "_")
+      lrt_model_name <- paste(lrt_model_name, model, sep = "_")
+      assign(lrt_model_name, lrt_result, envir = .GlobalEnv)
+    }
+    for (model in names(sleuth_obj$tests[['lrt']])) {
+      sig_results <- c(lrt_result[sig_target_ids, ], sig_results)
+    }
+    sig_results <- sig_results[1:(length(sig_results) - 1)]
+    lrt_sig_name <- paste("lrt_sig_results", sleuth_obj_name, sep = "_")
+    assign(lrt_sig_name, sig_results, envir = .GlobalEnv)
+  }
+}
 
 
 #' Convert a given list of ensemble transcript id's into \code{ensembl_transcript_id}'s, \code{external_gene_name}'s, \code{ensembl_gene_id}'s, and the original transcript.id
 #'
 #' @param sig_results A data frame or list containing ensemble transcript id's
-#' @param entire_gene_name Set to TRUE if the non-abbreviated gene names is required.
+#' @param entire_gene_name Set to FALSE if the non-abbreviated gene name is required. Default value is TRUE.
 #'
 #' @return Converts the original data frame or list into a data frame with columns corresponding to \code{ensembl_transcript_id}'s, \code{external_gene_name}'s, \code{ensembl_gene_id}'s, and the original transcript.id
 #' @export
 #' @examples
 #' # Convert a data frame of ensemble transcript id's
 #' ensemble_to_id(wald_sig_results)
-ensemble_to_id <- function(sig_results, entire_gene_name = FALSE) {
-  if (!exists("mart")) {
+ensemble_to_id <- function(sig_results, entire_gene_name = TRUE){
+  if (!exists("mart")){
     print("Function requires a BioMart database and dataset. Run the following command to create the required `mart` object:")
     print("")
     print('mart <- useMart("ensembl", dataset = "mmusculus_gene_ensembl")')
   }
 
-  else {
-    sig_results$new_column <- gsub("\\.[0-9]*$", "", sig_results$target_id)
-
-    names(sig_results)[1] <- "transcript.version"
-    names(sig_results)[12] <- "transcript.id"
-
-    ensemble_convert <- getBM(attributes = c("ensembl_transcript_id","external_gene_name","ensembl_gene_id","description"),
-                              filters = "ensembl_transcript_id",
-                              values = sig_results$transcript.id,
+  else{
+    ensemble_convert <- getBM(attributes=c("ensembl_transcript_id_version","external_gene_name","description"),
+                              filters = "ensembl_transcript_id_version",
+                              values = sig_results$target_id,
                               mart = mart)
 
-    sig_results <- cbind(sig_results, ensemble_convert)
-    if (entire_gene_name) {
-      sig_results <- sig_results[, c(14, 1, 2:16)]
-    }
-    else {
-      sig_results <- sig_results[, c(14, 1, 2:15)]
-    }
+    sig_results <- merge(sig_results, ensemble_convert, by.x="target_id", by.y="ensembl_transcript_id_version")
+    sig_results <- sig_results[,c(12, 1:10, 13)]
+
+    if (entire_gene_name){sig_results <- sig_results[]}
+    else{sig_results <- sig_results[,c(1:12)]}
     assign("annotated_sig_results", sig_results, envir = .GlobalEnv)
   }
 }

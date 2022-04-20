@@ -4,12 +4,12 @@
 \alias{ensemble_to_id}
 \title{Convert a given list of ensemble transcript id's into \code{ensembl_transcript_id}'s, \code{external_gene_name}'s, \code{ensembl_gene_id}'s, and the original transcript.id}
 \usage{
-ensemble_to_id(sig_results, entire_gene_name = FALSE)
+ensemble_to_id(sig_results, entire_gene_name = TRUE)
 }
 \arguments{
 \item{sig_results}{A data frame or list containing ensemble transcript id's}
 
-\item{entire_gene_name}{Set to TRUE if the non-abbreviated gene names is required.}
+\item{entire_gene_name}{Set to FALSE if the non-abbreviated gene name is required. Default value is TRUE.}
 }
 \value{
 Converts the original data frame or list into a data frame with columns corresponding to \code{ensembl_transcript_id}'s, \code{external_gene_name}'s, \code{ensembl_gene_id}'s, and the original transcript.id

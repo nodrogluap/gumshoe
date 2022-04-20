@@ -7,7 +7,7 @@
 sleuth_interpret(data)
 }
 \arguments{
-\item{data}{A data frame containing metadata file name, metadata tiblle file, model names, and model formulae}
+\item{data}{A data frame containing metadata file name, metadata tibble file, model names, and model formulae}
 }
 \value{
 Sleuth object named using the associated metadata file name and processed with sleuth_prep() and sleuth_fit()

@@ -2,7 +2,7 @@
 
 export(design_filter)
 export(ensemble_to_id)
-export(f05)
+export(fdr_cutoff)
 export(sleuth_interpret)
 export(sleuth_object_result)
 export(sleuth_prep_transcript_dosage)

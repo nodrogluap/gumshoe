@@ -117,7 +117,7 @@ sleuth_test_lrt <- function(sleuth_obj) {
 #' # Given a Sleuth object, return a data frame of all target id's with an FDR less than the cutoff value
 #' fdr_cutoff(wald_test_results)
 fdr_cutoff <- function(sleuth_res, q_cutoff = .05){
-  sleuth_res[which(sleuth_res$q<q_cuttoff), ]
+  sleuth_res[which(sleuth_res$q<q_cutoff), ]
 }
 
 #' Retrieve all results from a given Sleuth object following statistical testing

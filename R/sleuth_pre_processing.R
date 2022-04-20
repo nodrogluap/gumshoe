@@ -169,7 +169,7 @@ sleuth_object_result <- function(sleuth_obj, test = "wt") {
       lrt_result <- sleuth_results(sleuth_obj, model, test_type = 'lrt')
       rownames(lrt_result) <- lrt_result$target_id
 
-      sig_target_ids <- unique(c(f05(lrt_result), sig_target_ids))
+      sig_target_ids <- unique(c(fdr_cutoff(lrt_result), sig_target_ids))
 
       lrt_model_name <- paste("lrt", sleuth_obj_name, sep = "_")
       lrt_model_name <- paste(lrt_model_name, model, sep = "_")

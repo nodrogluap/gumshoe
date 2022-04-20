@@ -144,7 +144,7 @@ sleuth_object_result <- function(sleuth_obj, test = "wt") {
         wald_result <- sleuth_results(sleuth_obj, model, test_type = 'wt')
         rownames(wald_result) <- wald_result$target_id
 
-        sig_target_ids <- unique(c(f05(wald_result), sig_target_ids))
+        sig_target_ids <- unique(c(fdr_cutoff(wald_result), sig_target_ids))
 
         wald_model_name <- paste("wald", sleuth_obj_name, sep = "_")
         wald_model_name <- paste(wald_model_name, model, sep = "_")

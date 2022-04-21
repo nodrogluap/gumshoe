@@ -197,7 +197,9 @@ sleuth_object_result <- function(sleuth_obj, all_data = TRUE, sig_data = TRUE, q
 #' ensemble_to_id(wald_sig_results)
 ensembl_to_id <- function(sig_results, entire_gene_name = TRUE){
   if (!exists("mart")){
-    cat("Function requires a BioMart database and dataset. Run the following command to create the required `mart` object for mice:\n")
+    cat("Function requires a BioMart database and dataset. Refer to the gumshoe wiki on details to install biomaRt.\n")
+    cat("\n")
+    cat("If biomaRt is installed, run the following command to create the required `mart` object for mice:\n")
     cat("\n")
     cat('mart <- useMart("ensembl", dataset = "mmusculus_gene_ensembl")\n')
     cat("\n")
@@ -235,46 +237,48 @@ ensembl_to_id <- function(sig_results, entire_gene_name = TRUE){
 #' # Create a volcano plot from a data frame with gene symbols, q-value, and FC.
 #' volc_plot(wald_sig_results, graph_name = "Treated v. WT - Sex Factor")
 volc_plot <- function(df, label_column_name = "external_gene_name", x_axis_column_name = "b", y_axis_column_name = "qval", x_cutoff = 2, y_cutoff = -log10(.05), graph_name = "Sample Graph Name") {
-  if ("ggrepel" %in% (.packages())){
+  if (!"ggrepel" %in% (.packages())){
     cat("Function requires the ggrepel package. If the package is not installed, refer to the gumshoe wiki, otherwise, run the following command to load the package:\n")
     cat("\n")
     cat('library("ggrepel")')
   }
   
-  df <- df[, c(label_column_name, y_axis_column_name, x_axis_column_name)]
-  colnames(df) <- c("gene_symbol", "Y_axis", "log2FC")
-
-  # Set colours and labels
-  df$diff_expressed <- "NO"
-  df$diff_expressed[df$log2FC > x_cutoff & df$Y_axis < y_cutoff] <- "UP"
-  df$diff_expressed[df$log2FC < -x_cutoff & df$Y_axis < y_cutoff] <- "DOWN"
-
-  df$label <- NA
-  df$label[df$diff_expressed != "NO"] <- df$gene_symbol[df$diff_expressed != "NO"]
-
-  if (any("NO" %in% df$diff_expressed)){
-    ggplot(df, aes(x = log2FC, y = -log10(Y_axis), col = diff_expressed, label = label)) +
-      geom_point(alpha = 0.5) +
-      theme_minimal() +
-      geom_text_repel(show.legend = FALSE, min.segment.length = 0.5) +
-      scale_color_manual(name = "Significant", values = c("blue", "black", "red")) +
-      geom_vline(xintercept = c(-x_cutoff, x_cutoff), col = "black", linetype = "dashed") +
-      geom_hline(yintercept = y_cutoff, col = "black", linetype = "dashed") +
-      labs(title = graph_name) +
-      xlab(expression(Log[2] ~ FC)) +
-      ylab(expression(-Log[10] ~ (Adj. ~ p - Value)))
-  }
-
   else{
-    ggplot(df, aes(x = log2FC, y = -log10(Y_axis), col = diff_expressed, label = label)) +
-      geom_point(alpha = 0.5) +
-      theme_minimal() +
-      geom_text_repel(show.legend = FALSE, min.segment.length = 0.5) +
-      scale_color_manual(name = "Significant", values = c("blue", "red")) +
-      geom_vline(xintercept = c(-x_cutoff, x_cutoff), col = "black", linetype = "dashed") +
-      geom_hline(yintercept = y_cutoff, col = "black", linetype = "dashed") +
-      labs(title = graph_name) +
-      xlab(expression(Log[2] ~ FC)) +
-      ylab(expression(-Log[10] ~ (Adj. ~ p - Value)))
+    df <- df[, c(label_column_name, y_axis_column_name, x_axis_column_name)]
+    colnames(df) <- c("gene_symbol", "Y_axis", "log2FC")
+  
+    # Set colours and labels
+    df$diff_expressed <- "NO"
+    df$diff_expressed[df$log2FC > x_cutoff & df$Y_axis < y_cutoff] <- "UP"
+    df$diff_expressed[df$log2FC < -x_cutoff & df$Y_axis < y_cutoff] <- "DOWN"
+  
+    df$label <- NA
+    df$label[df$diff_expressed != "NO"] <- df$gene_symbol[df$diff_expressed != "NO"]
+  
+    if (any("NO" %in% df$diff_expressed)){
+      ggplot(df, aes(x = log2FC, y = -log10(Y_axis), col = diff_expressed, label = label)) +
+        geom_point(alpha = 0.5) +
+        theme_minimal() +
+        geom_text_repel(show.legend = FALSE, min.segment.length = 0.5) +
+        scale_color_manual(name = "Significant", values = c("blue", "black", "red")) +
+        geom_vline(xintercept = c(-x_cutoff, x_cutoff), col = "black", linetype = "dashed") +
+        geom_hline(yintercept = y_cutoff, col = "black", linetype = "dashed") +
+        labs(title = graph_name) +
+        xlab(expression(Log[2] ~ FC)) +
+        ylab(expression(-Log[10] ~ (Adj. ~ p - Value)))
+    }
+  
+    else{
+      ggplot(df, aes(x = log2FC, y = -log10(Y_axis), col = diff_expressed, label = label)) +
+        geom_point(alpha = 0.5) +
+        theme_minimal() +
+        geom_text_repel(show.legend = FALSE, min.segment.length = 0.5) +
+        scale_color_manual(name = "Significant", values = c("blue", "red")) +
+        geom_vline(xintercept = c(-x_cutoff, x_cutoff), col = "black", linetype = "dashed") +
+        geom_hline(yintercept = y_cutoff, col = "black", linetype = "dashed") +
+        labs(title = graph_name) +
+        xlab(expression(Log[2] ~ FC)) +
+        ylab(expression(-Log[10] ~ (Adj. ~ p - Value)))
+    }
   }
 }

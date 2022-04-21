@@ -235,6 +235,12 @@ ensembl_to_id <- function(sig_results, entire_gene_name = TRUE){
 #' # Create a volcano plot from a data frame with gene symbols, q-value, and FC.
 #' volc_plot(wald_sig_results, graph_name = "Treated v. WT - Sex Factor")
 volc_plot <- function(df, label_column_name = "external_gene_name", x_axis_column_name = "b", y_axis_column_name = "qval", x_cutoff = 2, y_cutoff = -log10(.05), graph_name = "Sample Graph Name") {
+  if ("ggrepel" %in% (.packages())){
+    cat("Function requires the ggrepel package. If the package is not installed, refer to the gumshoe wiki, otherwise, run the following command to load the package:\n")
+    cat("\n")
+    cat('library("ggrepel")')
+  }
+  
   df <- df[, c(label_column_name, y_axis_column_name, x_axis_column_name)]
   colnames(df) <- c("gene_symbol", "Y_axis", "log2FC")
 

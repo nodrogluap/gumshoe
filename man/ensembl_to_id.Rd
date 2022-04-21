@@ -12,7 +12,7 @@ ensembl_to_id(sig_results, entire_gene_name = TRUE)
 \item{entire_gene_name}{Set to FALSE if the non-abbreviated gene name is required. Default value is TRUE.}
 }
 \value{
-Converts the original data frame or list into a data frame with columns corresponding to \code{ensembl_transcript_id}'s, \code{external_gene_name}'s, \code{ensembl_gene_id}'s, and the original transcript.id
+Converts the original data frame or list into a data frame with columns corresponding to \code{external_gene_name}'s, \code{description}'s, and the original \code{ensembl_transcript_id_version}.
 }
 \description{
 Convert a given list of ensemble transcript id's into \code{ensembl_transcript_id}'s, \code{external_gene_name}'s, \code{ensembl_gene_id}'s, and the original transcript.id

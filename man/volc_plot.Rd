@@ -6,6 +6,9 @@
 \usage{
 volc_plot(
   df,
+  label_column_name = "external_gene_name",
+  x_axis_column_name = "b",
+  y_axis_column_name = "qval",
   x_cutoff = 2,
   y_cutoff = -log10(0.05),
   graph_name = "Sample Graph Name"
@@ -13,6 +16,12 @@ volc_plot(
 }
 \arguments{
 \item{df}{A data frame or list containing ensemble transcript id's}
+
+\item{label_column_name}{The column name of the data point labels. The default is external_gene_name, which is the column name from the output of the ensembl_to_id function.}
+
+\item{x_axis_column_name}{The column name for the intended x-axis values. The default is "b", which is the name of the column corresponding to the FC after Sleuth analysis.}
+
+\item{y_axis_column_name}{The column name for the intended y-axis values. The default is "qval", which is the name of the column corresponding to the Benjamini-Hochberg multiple testing corrected p-value after Sleuth analysis.}
 
 \item{x_cutoff}{X-axis cutoff, which corresponds to the fold change. Default value is 2.}
 

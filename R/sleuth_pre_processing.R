@@ -116,8 +116,8 @@ sleuth_test_lrt <- function(sleuth_obj) {
 #' @examples
 #' # Given a Sleuth object, return a data frame of all target id's with an FDR less than the cutoff value
 #' fdr_cutoff(wald_test_results)
-fdr_cutoff <- function(sleuth_res, q_cutoff = .05) {
-  sleuth_res[which(sleuth_res$q < q_cutoff),]
+fdr_cutoff <- function(sleuth_res, q_cutoff = .05){
+  sleuth_res[which(sleuth_res$q < q_cutoff), ]
 }
 
 #' Retrieve all results from a given Sleuth object following statistical testing
@@ -150,12 +150,12 @@ sleuth_object_result <- function(sleuth_obj, all_data = TRUE, sig_data = TRUE, q
         wald_model_name <- paste("wald", sleuth_obj_name, sep = "_")
         wald_model_name <- paste(wald_model_name, model, sep = "_")
 
-        if (all_data) {
+        if (all_data){
           assign(wald_model_name, wald_result, envir = .GlobalEnv)
         }
-        if (sig_data) {
+        if (sig_data){
           sig_target_ids <- fdr_cutoff(wald_result, q_cutoff = q_max)
-          sig_model_name <- paste("sig", wald_model_name, sep = "_")
+          sig_model_name <- paste("sig", wald_model_name, sep="_")
           assign(sig_model_name, sig_target_ids, envir = .GlobalEnv)
         }
       }
@@ -172,12 +172,12 @@ sleuth_object_result <- function(sleuth_obj, all_data = TRUE, sig_data = TRUE, q
       lrt_model_name <- paste("lrt", sleuth_obj_name, sep = "_")
       lrt_model_name <- paste(lrt_model_name, model, sep = "_")
 
-      if (all_data) {
+      if (all_data){
         assign(lrt_model_name, lrt_result, envir = .GlobalEnv)
       }
-      if (sig_data) {
-        sig_target_ids <- fdr_cutoff(lrt_result, q_cutoff = q_max)
-        sig_model_name <- paste("sig", lrt_model_name, sep = "_")
+      if (sig_data){
+        sig_target_ids <- fdr_cutoff(lrt_result,  q_cutoff = q_max)
+        sig_model_name <- paste("sig", lrt_model_name, sep="_")
         assign(sig_model_name, sig_target_ids, envir = .GlobalEnv)
       }
     }
@@ -195,8 +195,8 @@ sleuth_object_result <- function(sleuth_obj, all_data = TRUE, sig_data = TRUE, q
 #' @examples
 #' # Convert a data frame of ensemble transcript id's
 #' ensemble_to_id(wald_sig_results)
-ensembl_to_id <- function(sig_results, entire_gene_name = TRUE) {
-  if (!exists("mart")) {
+ensembl_to_id <- function(sig_results, entire_gene_name = TRUE){
+  if (!exists("mart")){
     cat("Function requires a BioMart database and dataset. Run the following command to create the required `mart` object for mice:\n")
     cat("\n")
     cat('mart <- useMart("ensembl", dataset = "mmusculus_gene_ensembl")\n')
@@ -204,18 +204,18 @@ ensembl_to_id <- function(sig_results, entire_gene_name = TRUE) {
     cat("If a mart object has already been assigned, please confirm that the object is named `mart`")
   }
 
-  else {
-    ensembl_convert <- getBM(attributes = c("ensembl_transcript_id_version", "external_gene_name", "description"),
+  else{
+    ensembl_convert <- getBM(attributes=c("ensembl_transcript_id_version","external_gene_name","description"),
                              filters = "ensembl_transcript_id_version",
                              values = sig_results$target_id,
                              mart = mart)
 
-    sig_results <- merge(sig_results, ensembl_convert, by.x = "target_id", by.y = "ensembl_transcript_id_version")
+    sig_results <- merge(sig_results, ensembl_convert, by.x="target_id", by.y="ensembl_transcript_id_version")
 
-    sig_results <- sig_results[, c(length(sig_results) - 1, 1:(length(sig_results) - 2), length(sig_results))]
+    sig_results <- sig_results[,c(length(sig_results)-1, 1:(length(sig_results)-2), length(sig_results))]
 
-    if (entire_gene_name) { sig_results <- sig_results[] }
-    else { sig_results <- sig_results[, c(1:12)] }
+    if (entire_gene_name){sig_results <- sig_results[]}
+    else{sig_results <- sig_results[,c(1:12)]}
     assign("annotated_sig_results", sig_results, envir = .GlobalEnv)
   }
 }
@@ -223,6 +223,9 @@ ensembl_to_id <- function(sig_results, entire_gene_name = TRUE) {
 #' Generate a volcano plot from a data frame containing a gene name, q-value, and fold change with user-selected cutoffs and title.
 #'
 #' @param df A data frame or list containing ensemble transcript id's
+#' @param label_column_name The column name of the data point labels. The default is external_gene_name, which is the column name from the output of the ensembl_to_id function.
+#' @param x_axis_column_name The column name for the intended x-axis values. The default is "b", which is the name of the column corresponding to the FC after Sleuth analysis.
+#' @param y_axis_column_name The column name for the intended y-axis values. The default is "qval", which is the name of the column corresponding to the Benjamini-Hochberg multiple testing corrected p-value after Sleuth analysis.
 #' @param x_cutoff X-axis cutoff, which corresponds to the fold change. Default value is 2.
 #' @param y_cutoff Y-axis cutoff, which corresponds to the q-value. Default value is -log10(.05).
 #' @param graph_name Name of the graph. Default is "Sample Graph Name".
@@ -231,7 +234,10 @@ ensembl_to_id <- function(sig_results, entire_gene_name = TRUE) {
 #' @examples
 #' # Create a volcano plot from a data frame with gene symbols, q-value, and FC.
 #' volc_plot(wald_sig_results, graph_name = "Treated v. WT - Sex Factor")
-volc_plot <- function(df, x_cutoff = 2, y_cutoff = -log10(.05), graph_name = "Sample Graph Name") {
+volc_plot <- function(df, label_column_name = "external_gene_name", x_axis_column_name = "b", y_axis_column_name = "qval", x_cutoff = 2, y_cutoff = -log10(.05), graph_name = "Sample Graph Name") {
+  df <- df[, c(label_column_name, y_axis_column_name, x_axis_column_name)]
+  colnames(df) <- c("gene_symbol", "Y_axis", "log2FC")
+
   # Set colours and labels
   df$diff_expressed <- "NO"
   df$diff_expressed[df$log2FC > x_cutoff & df$Y_axis < y_cutoff] <- "UP"
@@ -240,7 +246,7 @@ volc_plot <- function(df, x_cutoff = 2, y_cutoff = -log10(.05), graph_name = "Sa
   df$label <- NA
   df$label[df$diff_expressed != "NO"] <- df$gene_symbol[df$diff_expressed != "NO"]
 
-  if (grepl("NO", df$diff_expressed)) {
+  if (any("NO" %in% df$diff_expressed)){
     ggplot(df, aes(x = log2FC, y = -log10(Y_axis), col = diff_expressed, label = label)) +
       geom_point(alpha = 0.5) +
       theme_minimal() +
@@ -248,12 +254,12 @@ volc_plot <- function(df, x_cutoff = 2, y_cutoff = -log10(.05), graph_name = "Sa
       scale_color_manual(name = "Significant", values = c("blue", "black", "red")) +
       geom_vline(xintercept = c(-x_cutoff, x_cutoff), col = "black", linetype = "dashed") +
       geom_hline(yintercept = y_cutoff, col = "black", linetype = "dashed") +
-      labs(title = graph_title) +
+      labs(title = graph_name) +
       xlab(expression(Log[2] ~ FC)) +
       ylab(expression(-Log[10] ~ (Adj. ~ p - Value)))
   }
 
-  else {
+  else{
     ggplot(df, aes(x = log2FC, y = -log10(Y_axis), col = diff_expressed, label = label)) +
       geom_point(alpha = 0.5) +
       theme_minimal() +
@@ -261,7 +267,7 @@ volc_plot <- function(df, x_cutoff = 2, y_cutoff = -log10(.05), graph_name = "Sa
       scale_color_manual(name = "Significant", values = c("blue", "red")) +
       geom_vline(xintercept = c(-x_cutoff, x_cutoff), col = "black", linetype = "dashed") +
       geom_hline(yintercept = y_cutoff, col = "black", linetype = "dashed") +
-      labs(title = graph_title) +
+      labs(title = graph_name) +
       xlab(expression(Log[2] ~ FC)) +
       ylab(expression(-Log[10] ~ (Adj. ~ p - Value)))
   }

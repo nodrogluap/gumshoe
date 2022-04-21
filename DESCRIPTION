@@ -30,7 +30,8 @@ Suggests:
     rmarkdown,
     knitr,
     testthat (>= 3.0.0),
-    biomRt
+    biomRt,
+    ggrepel
 VignetteBuilder: knitr
 RoxygenNote: 7.1.2
 Config/testthat/edition: 3

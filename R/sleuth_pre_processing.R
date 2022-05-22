@@ -45,8 +45,7 @@ sleuth_interpret <- function(data) {
 
     for (metadata_model_number in 1:length(metadata_model_names)) {
       so_holder_variable <- sleuth_prep(metadata_file,
-                                        as.formula(metadata_model_formula[metadata_model_number]),
-                                        num_cores = 1)
+                                        as.formula(metadata_model_formula[metadata_model_number]))
       so_holder_variable <- sleuth_fit(so_holder_variable)
 
       sleuth_obj_name <- paste("so", metadata_model_names[metadata_model_number], sep = "_")

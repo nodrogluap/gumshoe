@@ -281,3 +281,84 @@ volc_plot <- function(df, label_column_name = "external_gene_name", x_axis_colum
     }
   }
 }
+
+#' Spread abundance by a column. Take a data.frame from a sleuth object 
+#' (e.g. \code{obs_raw}) and cast it into a matrix where the rows are the 
+#' target_ids and the columns are the sample ids. The values are the variable 
+#' you are "spreading" on.
+#' 
+#' @param abund the abundance \code{data.frame} from a \code{sleuth} object
+#' @param var a character array of length one. The variable for which to get "spread" on (e.g. "est_counts").
+#' 
+#' @export
+spread_abundance_by <- function(abund, var, which_order) {
+  # var <- lazyeval::lazy(var)
+  abund <- data.table::as.data.table(abund)
+  var_spread <- data.table::dcast(abund, target_id ~ sample, value.var = var)
+  # there is a discrepancy between data table's sorting of character vectors
+  # and how tidyr previously (or the order function) sorts character vectors
+  # so next step is needed to make sure the order is correct
+  var_spread <- var_spread[order(var_spread$target_id), ]
+  var_spread <- as.data.frame(var_spread, stringsAsFactors = FALSE)
+  rownames(var_spread) <- var_spread$target_id
+  var_spread["target_id"] <- NULL
+  result <- as.matrix(var_spread)
+  
+  result[, which_order, drop = FALSE]
+}
+
+#' Generate a PCA plot from a sleuth object with user-selected colour_by and title.
+#'
+#' @param obj A sleuth object.
+#' @param pc_x Integer denoting the principle component to use for the x-axis.
+#' @param pc_y Integer denoting the principle component to use for the y-axis.
+#' @param units Either 'est_counts' ('scaled_reads_per_base' for gene_mode) or 'tpm'.
+#' @param color_by Column name to colour the samples by. Default is NULL.
+#' @param graph_name Name of the graph. Default is "Sample Plot Name".
+#' @param scaled If the plot should be scaled to the amount of variation. Scale factor is 1:5.
+#'
+#' @export
+#' @examples
+#' # Create a PCA plot from a sleuth object. 
+#' self_plot_pca(so, colour_by = "tissue", graph_name = "All Samples")
+self_plot_pca <- function(obj, pc_x = 1L, pc_y = 2L, units = 'est_counts',
+                          color_by = NULL, graph_name ='Sample Plot Name', scaled = TRUE){
+  
+  mat <- spread_abundance_by(obj$obs_norm_filt, units,
+                             obj$sample_to_covariates$sample)
+  
+  pca_res <- prcomp(t(mat))
+  df <- as.data.frame(pca_res$x[, c(pc_x, pc_y)])
+  df$sample <- rownames(df)
+  rownames(df) <- NULL
+  
+  ppv <- plot_pc_variance(obj)
+  PCpc <- ppv$data$var
+  pc_1 <- paste0('PC1 ', '(', round(PCpc[1], 2), '%)')
+  pc_2 <- paste0('PC2 ', '(', round(PCpc[2], 2), '%)')
+  
+  df <- dplyr::left_join(df, obj$sample_to_covariates,
+                         by = 'sample')
+  
+  ggplot(df, aes(PC1, PC2, colour =  color_by, label = sample)) + 
+    theme_bw() +
+    theme(legend.position = "none") +
+    geom_point(alpha = 0.5) +
+    geom_text_repel(show.legend = FALSE) +
+    scale_color_manual(name = color_by, values = c("black", "blue", "red", "green")) +
+    labs(title = graph_name) +
+    xlab(pc_1) +
+    ylab(pc_2)
+  
+  if (scaled){
+    ggsave("figure1.png", dpi=300, dev='png', height=PCpc[2] / 5, 
+           width=PCpc[1] / 5, 
+           units="in")
+  }
+  
+  else{
+    ggsave("figure1.png", dpi=300, dev='png', height=4.5, 
+           width=6, 
+           units="in")
+  }
+}

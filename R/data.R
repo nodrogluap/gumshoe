@@ -1,0 +1,18 @@
+#' workspace_full 
+#'
+#' Data from a single-cell experiment on colonic sensory neurons in mice. The 
+#' data has been combined and converted into bulk RNA-Seq data, and has four
+#' tissue sources (NF, NP, PEP, TH) and two sexes (male and female).
+#'
+#' @docType data
+#'
+#' @usage data(workspace_full)
+#'
+#' @format An object of sleuth.
+#'
+#' @keywords datasets
+#'
+#' @references Usoskin D, Furlan A, Islam S, Abdo H, Lönnerberg P, Lou D, Hjerling-Leffler J, Haeggström J, Kharchenko O, Kharchenko PV, Linnarsson S, Ernfors P (2015) Unbiased classification of sensory neuron types by large-scale single-cell RNA sequencing. Nat Neurosci 18:145–153.
+#' (\href{https://www.nature.com/articles/nn.3881}{Nature})
+#' @export
+"workspace_full"

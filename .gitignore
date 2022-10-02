@@ -2,3 +2,9 @@
 .DS_Store
 data/plot/pca_plot.pdf
 data/workspace_full.rda
+.Rproj.user
+gumshoe.Rproj
+data/tutorial_files.zip
+.Rbuildignore
+.Rhistory
+*.rda

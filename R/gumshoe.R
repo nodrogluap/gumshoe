@@ -193,23 +193,6 @@ replicate_dotplots <- function(sleuth_obj, design_matrix_combo){
 	}
 }
 
-pca_plot <- function(sleuth_obj){
-	est_count_matrix <- sleuth:::spread_abundance_by(sleuth_obj$obs_norm_filt, "est_counts", sleuth_obj$sample_to_covariates$sample);
-	pca <- prcomp(t(est_count_matrix));
-	plot_vector_length <- sqrt((pca$rotation[,1]^2)+(pca$rotation[,2]^2));
-	# Highlight the ten longest
-	keep <- names(tail(sort(plot_vector_length), 10));
-	n <- rownames(pca$rotation);
-	pca$rotation[!(rownames(pca$rotation) %in% keep),] <- c(0)
-	# Add gene name to the loadings viz of available
-	if (!is.null(sleuth_obj$target_mapping)) {
-		t2g <- sleuth_obj$target_mapping;
-		rownames(t2g) <- t2g$target_id;
-		rownames(pca$rotation) <- lapply(n, function(x){ifelse(x %in% keep, paste0(x, "-", t2g[x,2]), ".")})
-	}
-	autoplot(pca, data=t(est_count_matrix), label=TRUE, shape=FALSE, loadings = TRUE, loadings.label = TRUE, loadings.label.size = 3, loadings.label.vjust = 1.7)
-}
-
 #' Filter low expressed transcripts by taking into account the regression model.
 #'
 #' @param meta the same data frame that would be passed as the first argument to sleuth_prep

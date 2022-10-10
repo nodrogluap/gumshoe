@@ -1,5 +1,6 @@
 # Plotting functions for Gumshoe
 
+# Functions ----
 pca_plot <- function(sleuth_obj){
   est_count_matrix <- sleuth:::spread_abundance_by(sleuth_obj$obs_norm_filt, "est_counts", sleuth_obj$sample_to_covariates$sample);
   pca <- prcomp(t(est_count_matrix));

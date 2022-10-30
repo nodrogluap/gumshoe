@@ -30,22 +30,35 @@
 #' Automate the running of sleuth_prep and sleuth_fit on all provided metadata files and the associated models
 #'
 #' @param data A data frame containing metadata file name, metadata tibble file, model names, and model formulae
+#' @param target_map A data frame that contains the target_ids and their gene mapping to aggregate transcripts using sleuth_prep
+#' @param num_core An integer for the number of cores to be used for sleuth_prep
 #'
 #' @return Sleuth object named using the associated metadata file name and processed with sleuth_prep() and sleuth_fit()
 #' @export
 #' @examples
 #' # Given a sample data frame containing a metadata_file_name, metadata_file, model_name, and model_data (formulae),
 #' # create a sleuth object that has been processed using sleuth_prep() followed by sleuth_fit()
-#' sleuth_interpret(analysis_data)
-sleuth_interpret <- function(data) {
+#' sleuth_interpret(analysis_data, num_core = 3)
+sleuth_interpret <- function(data, target_map, num_core = 1) {
   for (metadata_file_number in 1:length(data$metadata_name)) {
     metadata_file <- data.frame(data[metadata_file_number, 2])
     metadata_model_names <- unlist(strsplit(data$model_name[metadata_file_number], ","))
     metadata_model_formula <- unlist(strsplit(data$model_data[metadata_file_number], ","))
 
     for (metadata_model_number in 1:length(metadata_model_names)) {
-      so_holder_variable <- sleuth_prep(metadata_file,
-                                        as.formula(metadata_model_formula[metadata_model_number]))
+      if (missing(target_map){
+        so_holder_variable <- sleuth_prep(metadata_file, 
+                                          as.formula(metadata_model_formula[metadata_model_number]), 
+                                          num_cores = num_core)
+      }
+      
+      else {
+        so_holder_variable <- sleuth_prep(metadata_file, 
+                                          as.formula(metadata_model_formula[metadata_model_number]), 
+                                          target_mapping =  target_map,
+                                          num_cores = num_core)
+      }
+    
       so_holder_variable <- sleuth_fit(so_holder_variable)
 
       sleuth_obj_name <- paste("so", metadata_model_names[metadata_model_number], sep = "_")

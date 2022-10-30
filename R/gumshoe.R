@@ -24,7 +24,7 @@ std_mean <- function(x){sd(x)/sqrt(length(x))}
 #' The following call builds a new differential expression model (~treatment + NM_001402) that accounts for this artefact.
 #' so_redux <- sleuth_prep_transcript_dosage(so, meta, "NM_001402")
 #'
-#' Compare the model fits (lower number os better)
+#' Compare the model fits (lower number is better)
 #' sleuth_model_rss(so)
 #' sleuth_model_rss(so_redux)
 sleuth_prep_transcript_dosage <- function(sleuth_obj, metadata, transcript_id){
@@ -217,3 +217,4 @@ design_filter <- function(meta, model, row, min_reads=5, min_prop = 0.47){
            			 	|| basic_filter(row, min_reads, min_prop))
 	    })) > 0
 }
+

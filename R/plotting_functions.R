@@ -159,3 +159,23 @@ self_plot_pca <- function(obj, pc_x = 1L, pc_y = 2L, units = 'est_counts',
            units="in")
   }
 }
+
+#' Generate a box plot from kruskal-wallis results with user-selected title.
+#'
+#' @param kruskal_result A sleuth object.
+#' @param graph_name Name of the graph. Default is "Sample Plot Name".
+#'
+#' @export
+#' @examples
+#' # Create a box plot from a kruskal-wallis result retrived using sleuth_kruskal_wallis(). 
+#' isoform_boxplot(kw_result, graph_name = "All Isoforms")
+isoform_boxplot <- function(kruskal_result, graph_name ='Sample Plot Name'){
+  ggplot(kw_result_mean, aes(x = target_id, y = tpm, col = target_id)) + 
+    theme_minimal() +        
+    geom_boxplot() +
+    guides(color = "none") + 
+    geom_jitter() + 
+    scale_fill_brewer(palette = "Dark2") +
+    ylab("Transcripts Per Million") + xlab("Target ID") + labs(title = graph_name) +
+    rotate_x_text(90)
+}

@@ -1,7 +1,7 @@
 # Plotting functions for Gumshoe
 
 # Functions ----
-# TODO: Should this still be contained?
+# TODO: Should this still be contained? Because we have the scaled PCA plot now.
 pca_plot <- function(sleuth_obj){
   est_count_matrix <- sleuth:::spread_abundance_by(sleuth_obj$obs_norm_filt, "est_counts", sleuth_obj$sample_to_covariates$sample);
   pca <- prcomp(t(est_count_matrix));
@@ -196,7 +196,7 @@ isoform_boxplot <- function(kruskal_result, graph_name ='Sample Plot Name'){
 heatmap_plot <- function(sleuth_obj, genes, q_max = .05, test = "wt", boxplot = TRUE){
   # Retrieve the scaled transcript counts for the set of genes passed to the function
   scaled_trancript_counts <- filtered_scaled_transcript_counts(sleuth_obj = sleuth_obj, genes = genes)
-  assign("scaled_trancript_counts", scaled_trancript_counts, envir = .GlobalEnv)
+  # assign("scaled_trancript_counts", scaled_trancript_counts, envir = .GlobalEnv)
   
   # Dcast the scaled_trancript_counts to make the columns the sample names, rows the transcript ids, and the cells the est_count values
   scaled_trancript_counts <- dcast(scaled_trancript_counts, target_id ~ sample, value.var = "est_counts")
@@ -210,16 +210,17 @@ heatmap_plot <- function(sleuth_obj, genes, q_max = .05, test = "wt", boxplot = 
   scaled_trancript_counts <- log2(scaled_trancript_counts)
   scaled_trancript_counts[sapply(scaled_trancript_counts, is.infinite)] <- NA
   scaled_trancript_count_matrix <- as.matrix(scaled_trancript_counts)
-  assign("scaled_trancript_counts", scaled_trancript_counts, envir = .GlobalEnv)
+  # assign("scaled_trancript_count_matrix", scaled_trancript_count_matrix, envir = .GlobalEnv)
+  
   
   # Gather the differentially expressed transcripts after running a wt or lrt
   all_results <- sleuth_object_result(sleuth_obj = sleuth_obj, all_data = FALSE, sig_data = FALSE, single_df = TRUE, test = test)
   all_results <- all_results[all_results$ext_gene %in% genes,]
-  #all_results <- fdr_cutoff(all_results, q_cutoff = q_max)
+  all_results <- fdr_cutoff(all_results, q_cutoff = q_max)
   assign("all_results", all_results, envir = .GlobalEnv)
   
   # Obtain the p-value per transcript. 
-  transcript_p_val <- dcast(all_results, target_id ~ ext_gene, value.var = "qval", fun.aggregate=min)
+  transcript_p_val <- dcast(all_results, target_id ~ ext_gene, value.var = "qval", fun.aggregate=sum)
   rownames(transcript_p_val) <- transcript_p_val$target_id
   transcript_p_val <- transcript_p_val[-1]
   
@@ -228,34 +229,54 @@ heatmap_plot <- function(sleuth_obj, genes, q_max = .05, test = "wt", boxplot = 
   rownames(transcript_p_val) <- transcript_p_val$Row.names
   transcript_p_val <- transcript_p_val[2:(length(genes)+1)]
   transcript_p_val[transcript_p_val == 0] <- NA
+  assign("transcript_p_val", transcript_p_val, envir = .GlobalEnv)
   
   pch <- transcript_p_val
   pch[pch < 0.05] <- "*"
-  pch <- as.matrix(pch)
+  assign("pch", pch, envir = .GlobalEnv)
   
   # Heatmap Annotation Construction
+  ht_opt(legend_border = "black", heatmap_border = TRUE, annotation_border = TRUE)
   
-  ha_t = HeatmapAnnotation(df = sleuth_obj$sample_to_covariates[, 2:ncol(sleuth_obj$sample_to_covariates)], annotation_height = unit(4, "mm"), border = TRUE)
-  ha_r = rowAnnotation("P-Value" = anno_simple(transcript_p_val, pch = pch, height = unit(4, "cm"), border = TRUE, na_col = "black"))
-  lgd_sig = Legend(pch = "*", type = "points", labels = "< 0.01")
+  ha_top = HeatmapAnnotation(df = sleuth_obj$sample_to_covariates[, 2:ncol(sleuth_obj$sample_to_covariates)])
+  ha_left = rowAnnotation("Scaled Transcript Est Counts" = anno_boxplot(scaled_trancript_count_matrix, 
+                                                                        gp = gpar(fill = 1:length(transcript_p_val[,1]))))
+  lgd_sig = Legend(pch = "*", type = "points", labels = "< 0.01", border = TRUE)
+  
+  pvalue_col_fun = colorRamp2(c(0, 0.01, 0.05, 0.1, 0.5, 1), c("red", "purple", "blue", "white", "green", "black"))
+  
+  # Generate gene significance heatmap annotation with asterisk
+  for (gene in genes){
+    ha_temp <- HeatmapAnnotation(gene = anno_simple(transcript_p_val[gene], pch = as.matrix(pch[gene]), col = pvalue_col_fun), annotation_label = gene, which = "row")
+
+    if(!exists("ha_right")){
+      ha_right <- ha_temp
+    }
+    else{
+      ha_right <- c(ha_right, ha_temp)
+    }
+  }
+  
+  lgd_pvalue = Legend(title = "p-value", col_fun = pvalue_col_fun, at = c(0, 1, 2, 3, 4, 5, 6), 
+                      labels = c("0", "0.01", "0.05", "0.1", "0.5", "1"), border = TRUE)
+  # assign("ha_right", ha_right, envir = .GlobalEnv)
   
   if (boxplot){
-  ha_l = rowAnnotation("Scaled Transcript Est Counts" = anno_boxplot(scaled_trancript_count_matrix, height = unit(4, "cm")))
-  
-  
-  ha_c <- Heatmap(scaled_trancript_count_matrix, name = "Scaled Counts", rect_gp = gpar(col = "white", lwd = 1), clustering_distance_rows = "pearson", clustering_distance_columns = "pearson",
-          row_title = "Transcripts", row_title_rot = 0, row_names_max_width = max_text_width(rownames(scaled_trancript_count_matrix), gp = gpar(fontsize = 12)),
-          show_column_names = FALSE,
-          top_annotation = ha_t, left_annotation  = ha_l, right_annotation = ha_r,
-          na_col = "black")
-  draw(ha_c, annotation_legend_list = list(lgd_sig))
+    ha_c <- Heatmap(scaled_trancript_count_matrix, name = "Scaled Counts", rect_gp = gpar(col = "white", lwd = 1), border_gp = gpar(col = "black"), clustering_distance_rows = "pearson", clustering_distance_columns = "pearson",
+            row_title = "Transcripts", row_title_rot = 0, row_names_max_width = max_text_width(rownames(scaled_trancript_count_matrix), gp = gpar(fontsize = 12)),
+            show_column_names = FALSE,
+            na_col = "black",
+            top_annotation = ha_top, left_annotation  = ha_left, right_annotation = ha_right)
+    
+    assign("ha_c", ha_c, envir = .GlobalEnv)
+    draw(ha_c, annotation_legend_list = list(lgd_sig, lgd_pvalue))
   
   }
   else{
     ha_c <- Heatmap(scaled_trancript_count_matrix, name = "Scaled Counts", rect_gp = gpar(col = "white", lwd = 1), clustering_distance_rows = "pearson", clustering_distance_columns = "pearson",
             row_title = "Transcripts", row_title_rot = 0, row_names_max_width = max_text_width(rownames(scaled_trancript_count_matrix), gp = gpar(fontsize = 12)),
             show_column_names = FALSE,
-            top_annotation = ha_t, right_annotation = ha_r,
+            top_annotation = ha_top, right_annotation = ha_right,
             na_col = "black")
   }
 } 

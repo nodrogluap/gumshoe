@@ -217,7 +217,7 @@ heatmap_plot <- function(sleuth_obj, genes, q_max = .05, test = "wt", boxplot = 
   all_results <- sleuth_object_result(sleuth_obj = sleuth_obj, all_data = FALSE, sig_data = FALSE, single_df = TRUE, test = test)
   all_results <- all_results[all_results$ext_gene %in% genes,]
   all_results <- fdr_cutoff(all_results, q_cutoff = q_max)
-  assign("all_results", all_results, envir = .GlobalEnv)
+  # assign("all_results", all_results, envir = .GlobalEnv)
   
   # Obtain the p-value per transcript. 
   transcript_p_val <- dcast(all_results, target_id ~ ext_gene, value.var = "qval", fun.aggregate=sum)
@@ -229,11 +229,11 @@ heatmap_plot <- function(sleuth_obj, genes, q_max = .05, test = "wt", boxplot = 
   rownames(transcript_p_val) <- transcript_p_val$Row.names
   transcript_p_val <- transcript_p_val[2:(length(genes)+1)]
   transcript_p_val[transcript_p_val == 0] <- NA
-  assign("transcript_p_val", transcript_p_val, envir = .GlobalEnv)
+  # assign("transcript_p_val", transcript_p_val, envir = .GlobalEnv)
   
   pch <- transcript_p_val
   pch[pch < 0.05] <- "*"
-  assign("pch", pch, envir = .GlobalEnv)
+  # assign("pch", pch, envir = .GlobalEnv)
   
   # Heatmap Annotation Construction
   ht_opt(legend_border = "black", heatmap_border = TRUE, annotation_border = TRUE)
@@ -268,7 +268,7 @@ heatmap_plot <- function(sleuth_obj, genes, q_max = .05, test = "wt", boxplot = 
             na_col = "black",
             top_annotation = ha_top, left_annotation  = ha_left, right_annotation = ha_right)
     
-    assign("ha_c", ha_c, envir = .GlobalEnv)
+    # assign("ha_c", ha_c, envir = .GlobalEnv)
     draw(ha_c, annotation_legend_list = list(lgd_sig, lgd_pvalue))
   
   }

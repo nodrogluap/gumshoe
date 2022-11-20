@@ -206,20 +206,18 @@ sleuth_object_result <- function(sleuth_obj, all_data = FALSE, sig_data = TRUE, 
         assign(sig_model_name, sig_target_ids, envir = .GlobalEnv)
       }
       if (single_df){
-        all_results_single_df <- rbind(all_results_single_df, lrt_result)
+        if (retrived_from_model){
+          lrt_result$models <- model
+          all_results_single_df <- rbind(all_results_single_df, lrt_result)
+        }
+        else{
+          all_results_single_df <- rbind(all_results_single_df, lrt_result)
+        }
     }
     }
   }
-  
   if (single_df){
-    if (retrived_from_model){
-      lrt_result$models <- model
-      all_results_single_df <- rbind(all_results_single_df, lrt_result)
-    }
-    else{
-      all_results_single_df <- rbind(all_results_single_df, lrt_result)
-    }
-  }
+    all_results_single_df
   }
 }
 

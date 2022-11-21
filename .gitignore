@@ -8,3 +8,4 @@ data/tutorial_files.zip
 .Rbuildignore
 .Rhistory
 *.rda
+*.RData

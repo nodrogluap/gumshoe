@@ -46,7 +46,7 @@ sleuth_interpret <- function(data, target_map, num_core = 1) {
     metadata_model_formula <- unlist(strsplit(data$model_data[metadata_file_number], ","))
 
     for (metadata_model_number in 1:length(metadata_model_names)) {
-      if (missing(target_map){
+      if (missing(target_map)){
         so_holder_variable <- sleuth_prep(sample_to_covariates =  metadata_file, 
                                           full_model = as.formula(metadata_model_formula[metadata_model_number]), 
                                           num_cores = num_core)

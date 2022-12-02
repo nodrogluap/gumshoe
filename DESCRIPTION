@@ -10,7 +10,7 @@ Authors@R:
 		 family = "Gill",
 		 role = "ctb",
 		 email = "gurveer.gill1@ucalgary.ca"))
-Description: What the package does (one paragraph).
+Description: Supplemental Statistical Tests and Utilities for Kallisto/Sleuth RNASeq Analysis
 Depends: 
 	R (>= 3.6.1),
 	ggfortify,
@@ -31,7 +31,10 @@ Suggests:
     knitr,
     testthat (>= 3.0.0),
     biomaRt,
-    ggrepel
+    ggrepel,
+    Reshape2,
+    ComplexHeatmap,
+    circlize
 VignetteBuilder: knitr
-RoxygenNote: 7.2.1
+RoxygenNote: 7.2.2
 Config/testthat/edition: 3

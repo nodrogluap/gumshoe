@@ -4,7 +4,7 @@
 #' @param genes A vector containing gene names as strings that should be returned.
 #'
 #' @return Filtered scaled transcript counts for a specific set of genes.
-#' @export
+#' @export 
 #' @examples
 #' # Given a Sleuth object, run the Kruskal-Wallis test of the est_counts factor between isoform groups for all samples.
 #' filtered_scaled_transcript_counts(so_nominal, "ABH1", "sex", iqf = 0.25)

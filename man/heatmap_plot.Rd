@@ -8,8 +8,10 @@ heatmap_plot(
   sleuth_obj,
   genes,
   q_max = 0.05,
-  q_marker_vals = c(0.05, 0.01, 0.001),
   test = "wt",
+  sig_marker_values = c(0.05, 0.01, 0.001),
+  sig_markers = c("*", "**", "***"),
+  grouping_colours = list(),
   boxplot = TRUE
 )
 }
@@ -18,11 +20,15 @@ heatmap_plot(
 
 \item{genes}{A vector containing gene names whose transcripts should be plotted.}
 
-\item{q_max}{The maximum q-value that should be used as a cutoff to determine significant transcripts}
-
-\item{q_marker_vals}{A vector of the q-value cutoffs that should be used.}
+\item{q_max}{The maximum q-value that should be used as a cutoff to determine significant transcripts. Defaults to .05.}
 
 \item{test}{The sleuth test to be analyzed using sleuth_results, can be either "wt" or "lrt". Defaults to "wt".}
+
+\item{sig_marker_values}{A vector of values that should be used as a cutoff for significance labelling. Defaults to .05, .01, and .001.}
+
+\item{sig_markers}{Markers of signifigance. Defaults to \*, \*\*, \*\*\*.}
+
+\item{grouping_colours}{A list of groups and the associated level-colour pairs. See example for syntax. Defaults to empty list.}
 
 \item{boxplot}{A Boolean value that indicates whether a box plot of scaled transcripts should be displayed.}
 }
@@ -30,6 +36,6 @@ heatmap_plot(
 Generate a isoform level heat map. Can only show a maximum of three genes at the same time.
 }
 \examples{
-# Create a isoform heat map from a sleuth_object. 
-heatmap_plot(so, genes = c("Tp53", "Tnf", "Egfr", "Egr1"), q_max = .01, q_marker_vals = c(.05, .01, .001), test = "wt", bloxplot = FALSE)
+# Create a isoform heat map from a sleuth_object.
+heatmap_plot(so, genes = c("Tp53", "Tnf", "Egfr", "Egr1"), q_max = .01, test = 'lrt', grouping_colours = list(sex = c("F" = "thistle1", "M" = "turquoise1"), treatment = c("drug_A" = "indianred1", "drug_B" = "olivedrab1")), boxplot = FALSE)
 }

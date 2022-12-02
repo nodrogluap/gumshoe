@@ -1,8 +1,7 @@
 # Plotting functions for Gumshoe
 
 # Functions ----
-# TODO: Should this still be contained? Because we have the scaled PCA plot now.
-pca_plot <- function(sleuth_obj){
+by_plot <- function(sleuth_obj){
   est_count_matrix <- sleuth:::spread_abundance_by(sleuth_obj$obs_norm_filt, "est_counts", sleuth_obj$sample_to_covariates$sample);
   pca <- prcomp(t(est_count_matrix));
   plot_vector_length <- sqrt((pca$rotation[,1]^2)+(pca$rotation[,2]^2));

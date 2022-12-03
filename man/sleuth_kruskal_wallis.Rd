@@ -2,13 +2,13 @@
 % Please edit documentation in R/additional_statistical_tests.R
 \name{sleuth_kruskal_wallis}
 \alias{sleuth_kruskal_wallis}
-\title{Run a Kruskal-Wallis One-Way ANOVA on non-parametric data at the isoform level 
-for a selected gene. The quantile of data the test is run upon is calculated 
-from the the est_counts of all the data and the resulting value is used to 
-filter based upon the mean of the est_counts for each individual transcript. 
-For example, for a quantile probability of 0.25, the function will determine 
-the quantile probability for 0.25 and assume this value to be 50. The 
-function will then determine the mean est_counts for each transcript of the 
+\title{Run a Kruskal-Wallis One-Way ANOVA on non-parametric data at the isoform level
+for a selected gene. The quantile of data the test is run upon is calculated
+from the the est_counts of all the data and the resulting value is used to
+filter based upon the mean of the est_counts for each individual transcript.
+For example, for a quantile probability of 0.25, the function will determine
+the quantile probability for 0.25 and assume this value to be 50. The
+function will then determine the mean est_counts for each transcript of the
 gene and if the mean is greater than the quantile calculated value of 50, it
 will be included when running the test.}
 \usage{
@@ -29,13 +29,13 @@ sleuth_kruskal_wallis(sleuth_obj, gene, grouping, iqf = 0, threshold = 0.05)
 Results of a kruskal-wallis test at the isoform level
 }
 \description{
-Run a Kruskal-Wallis One-Way ANOVA on non-parametric data at the isoform level 
-for a selected gene. The quantile of data the test is run upon is calculated 
-from the the est_counts of all the data and the resulting value is used to 
-filter based upon the mean of the est_counts for each individual transcript. 
-For example, for a quantile probability of 0.25, the function will determine 
-the quantile probability for 0.25 and assume this value to be 50. The 
-function will then determine the mean est_counts for each transcript of the 
+Run a Kruskal-Wallis One-Way ANOVA on non-parametric data at the isoform level
+for a selected gene. The quantile of data the test is run upon is calculated
+from the the est_counts of all the data and the resulting value is used to
+filter based upon the mean of the est_counts for each individual transcript.
+For example, for a quantile probability of 0.25, the function will determine
+the quantile probability for 0.25 and assume this value to be 50. The
+function will then determine the mean est_counts for each transcript of the
 gene and if the mean is greater than the quantile calculated value of 50, it
 will be included when running the test.
 }

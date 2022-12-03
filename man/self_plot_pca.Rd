@@ -33,6 +33,6 @@ self_plot_pca(
 Generate a PCA plot from a sleuth object with user-selected colour_by and title.
 }
 \examples{
-# Create a PCA plot from a sleuth object. 
+# Create a PCA plot from a sleuth object.
 self_plot_pca(so, colour_by = "tissue", graph_name = "All Samples")
 }

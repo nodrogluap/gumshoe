@@ -15,6 +15,6 @@ isoform_boxplot(kruskal_result, graph_name = "Sample Plot Name")
 Generate a box plot from kruskal-wallis results with user-selected title.
 }
 \examples{
-# Create a box plot from a kruskal-wallis result retrived using sleuth_kruskal_wallis(). 
+# Create a box plot from a kruskal-wallis result retrived using sleuth_kruskal_wallis().
 isoform_boxplot(kw_result, graph_name = "All Isoforms")
 }

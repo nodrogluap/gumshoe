@@ -118,18 +118,25 @@ sleuth_test_lrt <- function(sleuth_obj) {
   }
 }
 
-#' Retrieve all target id's for a given data frame with a FDR less than the selected cutoff. Default cutoff value is .05.
+#' Retrieve all target id's for a given data frame with a FDR less than or equal to the selected cutoff. Default cutoff value is .05.
 #'
 #' @param sleuth_res A data frame generated following running sleuth_results
 #' @param q_cutoff The selected FDR cutoff value. Default is .05.
+#' @param q_equal Should the returned results by less than or equal to the q_cutoff. Default is false, which then returns all results less than but not equal to the q_cutoff.
 #'
 #' @return A list of target id's.
 #' @export
 #' @examples
 #' # Given a Sleuth object, return a data frame of all target id's with an FDR less than the cutoff value
 #' fdr_cutoff(wald_test_results)
-fdr_cutoff <- function(sleuth_res, q_cutoff = .05){
-  sleuth_res[which(sleuth_res$q < q_cutoff), ]
+fdr_cutoff <- function(sleuth_res, q_cutoff = .05, q_equal = FALSE){
+  if (q_equal) {
+    sleuth_res[which(sleuth_res$q <= q_cutoff), ]
+  }
+  
+  else {
+    sleuth_res[which(sleuth_res$q < q_cutoff), ]
+  }
 }
 
 #' Retrieve all results from a given Sleuth object following statistical testing

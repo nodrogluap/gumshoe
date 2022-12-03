@@ -9,6 +9,7 @@ heatmap_plot(
   genes,
   q_max = 0.05,
   test = "wt",
+  iqf = 0,
   sig_marker_values = c(0.05, 0.01, 0.001),
   sig_markers = c("*", "**", "***"),
   grouping_colours = list(),
@@ -25,6 +26,8 @@ heatmap_plot(
 
 \item{test}{The sleuth test to be analyzed using sleuth_results, can be either "wt" or "lrt". Defaults to "wt".}
 
+\item{iqf}{A numeric value between 0 and 1 (inclusive) to denote the quantile of data to display. Defaults to 0, which displays all data.}
+
 \item{sig_marker_values}{A vector of values that should be used as a cutoff for significance labelling. Defaults to .05, .01, and .001.}
 
 \item{sig_markers}{Markers of signifigance. Defaults to \*, \*\*, \*\*\*.}
@@ -38,5 +41,5 @@ Generate a isoform level heat map. Can only show a maximum of three genes at the
 }
 \examples{
 # Create a isoform heat map from a sleuth_object.
-heatmap_plot(so, genes = c("Tp53", "Tnf", "Egfr", "Egr1"), q_max = .01, test = 'lrt', grouping_colours = list(sex = c("F" = "thistle1", "M" = "turquoise1"), treatment = c("drug_A" = "indianred1", "drug_B" = "olivedrab1")), boxplot = FALSE)
+heatmap_plot(so, genes = c("Tp53", "Tnf", "Egfr", "Egr1"), q_max = .01, test = "lrt", grouping_colours = list(sex = c("F" = "thistle1", "M" = "turquoise1"), treatment = c("drug_A" = "indianred1", "drug_B" = "olivedrab1")), boxplot = FALSE)
 }

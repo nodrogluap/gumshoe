@@ -133,9 +133,9 @@ sleuth_test_lrt <- function(sleuth_obj) {
 #' fdr_cutoff(wald_test_results)
 fdr_cutoff <- function(sleuth_res, q_cutoff = .05, q_equal = FALSE) {
   if (q_equal) {
-    sleuth_res[which(sleuth_res$q <= q_cutoff), ]
+    sleuth_res[which(sleuth_res$qval <= q_cutoff), ]
   } else {
-    sleuth_res[which(sleuth_res$q < q_cutoff), ]
+    sleuth_res[which(sleuth_res$qval < q_cutoff), ]
   }
 }
 

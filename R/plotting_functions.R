@@ -269,7 +269,7 @@ heatmap_plot <- function(sleuth_obj, genes, q_max = .05, test = "wt", iqf = 0, s
   }
 
   # Generate gene significance heatmap annotation with asterisk.
-  qvalue_col_fun <- colorRamp2(c(0, 0.05), c("blue", "red"))
+  qvalue_col_fun <- colorRamp2(c(0, 1), c("white", "white"))
   model_names <- letters[1:length(colnames(transcript_p_val))]
   transcript_p_val[transcript_p_val > max(attributes(qvalue_col_fun)$breaks)] <- NA
 
@@ -293,7 +293,7 @@ heatmap_plot <- function(sleuth_obj, genes, q_max = .05, test = "wt", iqf = 0, s
       letter_index <- match(model, colnames(transcript_p_val))
       letter <- model_names[letter_index]
 
-      ha_temp <- HeatmapAnnotation(model = anno_simple(transcript_p_val[model], col = qvalue_col_fun, pch = as.matrix(pch[model]), pt_size = unit(1, "snpc") * 0.7, width = max_text_width(sig_markers) * 1.2, na_col = "black", border = TRUE), annotation_label = model, which = "row")
+      ha_temp <- HeatmapAnnotation(model = anno_simple(transcript_p_val[model], col = qvalue_col_fun, pch = as.matrix(pch[model]), pt_size = unit(1, "snpc") * 0.7, width = max_text_width(sig_markers) * 1.2, na_col = "white", border = TRUE), annotation_label = model, which = "row")
 
       names(ha_temp@anno_list) <- letter
       ha_temp@anno_list[[letter]]@name <- letter

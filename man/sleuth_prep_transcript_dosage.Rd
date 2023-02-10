@@ -30,7 +30,7 @@ Plot shows one sample way off on the X-axis, with biggest loading vector in the 
 The following call builds a new differential expression model (~treatment + NM_001402) that accounts for this artefact.
 so_redux <- sleuth_prep_transcript_dosage(so, meta, "NM_001402")
 
-Compare the model fits (lower number os better)
+Compare the model fits (lower number is better)
 sleuth_model_rss(so)
 sleuth_model_rss(so_redux)
 }

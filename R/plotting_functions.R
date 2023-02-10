@@ -42,32 +42,32 @@ volc_plot <- function(df, label_column_name = "external_gene_name", x_axis_colum
   } else {
     df <- df[, c(label_column_name, y_axis_column_name, x_axis_column_name)]
     colnames(df) <- c("gene_symbol", "Y_axis", "log2FC")
-
+    
     # Set colours and labels
-    df$diff_expressed <- "NO"
-    df$diff_expressed[df$log2FC > x_cutoff & df$Y_axis < y_cutoff] <- "UP"
-    df$diff_expressed[df$log2FC < -x_cutoff & df$Y_axis < y_cutoff] <- "DOWN"
-
+    df$diff_expressed <- "Not sig."
+    df$diff_expressed[df$log2FC > x_cutoff & df$Y_axis < y_cutoff] <- "Up-regulated"
+    df$diff_expressed[df$log2FC < -x_cutoff & df$Y_axis < y_cutoff] <- "Down-regulated"
+    
     df$label <- NA
-    df$label[df$diff_expressed != "NO"] <- df$gene_symbol[df$diff_expressed != "NO"]
-
-    if (any("NO" %in% df$diff_expressed)) {
+    df$label[df$diff_expressed != "Not sig."] <- df$gene_symbol[df$diff_expressed != "Not sig."]
+    
+    if (any("Not sig." %in% df$diff_expressed)) {
       ggplot(df, aes(x = log2FC, y = -log10(Y_axis), col = diff_expressed, label = label)) +
         geom_point(alpha = 0.5) +
         theme_minimal() +
         geom_text_repel(show.legend = FALSE, min.segment.length = 0.5) +
-        scale_color_manual(name = "Significant", values = c("blue", "black", "red")) +
+        scale_color_manual(name = "Expression", values = c("blue", "black", "red")) +
         geom_vline(xintercept = c(-x_cutoff, x_cutoff), col = "black", linetype = "dashed") +
         geom_hline(yintercept = y_cutoff, col = "black", linetype = "dashed") +
         labs(title = graph_name) +
-        xlab(expression(Log[2] ~ FC)) +
+        xlab(expression(Log[2] ~ (Fold ~ Change))) +
         ylab(expression(-Log[10] ~ (Adj. ~ p - Value)))
     } else {
       ggplot(df, aes(x = log2FC, y = -log10(Y_axis), col = diff_expressed, label = label)) +
         geom_point(alpha = 0.5) +
         theme_minimal() +
         geom_text_repel(show.legend = FALSE, min.segment.length = 0.5) +
-        scale_color_manual(name = "Significant", values = c("blue", "red")) +
+        scale_color_manual(name = "Expression", values = c("blue", "red")) +
         geom_vline(xintercept = c(-x_cutoff, x_cutoff), col = "black", linetype = "dashed") +
         geom_hline(yintercept = y_cutoff, col = "black", linetype = "dashed") +
         labs(title = graph_name) +
@@ -109,56 +109,80 @@ spread_abundance_by <- function(abund, var, which_order) {
 #' @param pc_y Integer denoting the principle component to use for the y-axis.
 #' @param units Either 'est_counts' ('scaled_reads_per_base' for gene_mode) or 'tpm'.
 #' @param color_by Column name to colour the samples by. Default is NULL.
+#' @param show_legend Boolean value if the legend should be shown in the figure out not.
 #' @param graph_name Name of the graph. Default is "Sample Plot Name".
-#' @param scaled If the plot should be scaled to the amount of variation. Scale factor is 1:5.
-#'
+#' @param auto_save If TRUE, the plot will be saved automatically. Defaults to FALSE.
+#' @param scaled Only works if auto_save is TRUE. The plot will be automatically saved and scaled to the amount of variation per axis. Scale factor is 1:5.
+#' 
 #' @export
 #' @examples
 #' # Create a PCA plot from a sleuth object.
 #' self_plot_pca(so, colour_by = "tissue", graph_name = "All Samples")
 self_plot_pca <- function(obj, pc_x = 1L, pc_y = 2L, units = "est_counts",
-                          color_by = NULL, graph_name = "Sample Plot Name", scaled = TRUE) {
+                          color_by = NULL, show_legend = TRUE, graph_name = "Sample Plot Name", auto_save = FALSE, scaled = TRUE) {
+  if (!is.null(color_by)){
+    color_by <- sym(color_by)
+  }
+  
   mat <- spread_abundance_by(
     obj$obs_norm_filt, units,
     obj$sample_to_covariates$sample
   )
-
+  
   pca_res <- prcomp(t(mat))
   df <- as.data.frame(pca_res$x[, c(pc_x, pc_y)])
   df$sample <- rownames(df)
   rownames(df) <- NULL
-
+  
   ppv <- plot_pc_variance(obj)
   PCpc <- ppv$data$var
   pc_1 <- paste0("PC1 ", "(", round(PCpc[1], 2), "%)")
   pc_2 <- paste0("PC2 ", "(", round(PCpc[2], 2), "%)")
-
+  
   df <- dplyr::left_join(df, obj$sample_to_covariates,
-    by = "sample"
+                         by = "sample"
   )
-
-  ggplot(df, aes(PC1, PC2, colour = color_by, label = sample)) +
-    theme_bw() +
-    theme(legend.position = "none") +
-    geom_point(alpha = 0.5) +
-    geom_text_repel(show.legend = FALSE) +
-    scale_color_manual(name = color_by, values = c("black", "blue", "red", "green")) +
-    labs(title = graph_name) +
-    xlab(pc_1) +
-    ylab(pc_2)
-
-  if (scaled) {
-    ggsave("figure1.png",
-      dpi = 300, dev = "png", height = PCpc[2] / 5,
-      width = PCpc[1] / 5,
-      units = "in"
-    )
-  } else {
-    ggsave("figure1.png",
-      dpi = 300, dev = "png", height = 4.5,
-      width = 6,
-      units = "in"
-    )
+  print(df)
+  
+  if (show_legend){
+    plt <- ggplot(df, aes(PC1, PC2, colour = !!color_by, label = sample)) +
+      theme_bw() +
+      geom_point(alpha = 0.5) +
+      geom_text_repel(show.legend = FALSE) +
+      scale_color_manual(name = color_by, values = c("black", "blue", "red", "green")) +
+      labs(title = graph_name) +
+      xlab(pc_1) +
+      ylab(pc_2)
+  }
+  else {
+    plt <- ggplot(df, aes(PC1, PC2, colour = !!color_by, label = sample)) +
+      theme_bw() +
+      geom_point(alpha = 0.5) +
+      theme(legend.position = "none") +
+      geom_text_repel(show.legend = FALSE) +
+      scale_color_manual(name = color_by, values = c("black", "blue", "red", "green")) +
+      labs(title = graph_name) +
+      xlab(pc_1) +
+      ylab(pc_2)
+  }
+  
+  if (auto_save){
+    if (scaled) {
+      ggsave("figure1.png",
+             dpi = 300, dev = "png", height = PCpc[2] / 5,
+             width = PCpc[1] / 5,
+             units = "in"
+      )
+    } else {
+      ggsave("figure1.png",
+             dpi = 300, dev = "png", height = 4.5,
+             width = 6,
+             units = "in"
+      )
+    }
+  }
+  else{
+    plt
   }
 }
 
@@ -210,11 +234,22 @@ heatmap_plot <- function(sleuth_obj, genes, q_max = .05, test = "wt", iqf = 0, s
     return("Confirm that the gene name is correct.")
   }
 
-  scaled_trancript_counts$target_id <- paste(scaled_trancript_counts$ext_gene, scaled_trancript_counts$target_id, sep = " - ")
+  if (sleuth_obj$gene_mode == TRUE){
+    scaled_trancript_counts <- aggregate(est_counts ~ ext_gene + sample, scaled_trancript_counts, mean)
 
-  # Dcast the scaled_trancript_counts to make the columns the sample names, rows the transcript ids, and the cells the est_count values
-  scaled_trancript_counts <- dcast(scaled_trancript_counts, target_id ~ sample, value.var = "est_counts")
-  rownames(scaled_trancript_counts) <- scaled_trancript_counts$target_id
+      # Dcast the scaled_trancript_counts to make the columns the sample names, rows the transcript ids, and the cells the est_count values
+    scaled_trancript_counts <- dcast(scaled_trancript_counts, ext_gene ~ sample, value.var = "est_counts")
+    rownames(scaled_trancript_counts) <- scaled_trancript_counts$ext_gene
+  }
+
+  else {
+    scaled_trancript_counts$target_id <- paste(scaled_trancript_counts$ext_gene, scaled_trancript_counts$target_id, sep = " - ")
+
+    # Dcast the scaled_trancript_counts to make the columns the sample names, rows the transcript ids, and the cells the est_count values
+    scaled_trancript_counts <- dcast(scaled_trancript_counts, target_id ~ sample, value.var = "est_counts")
+    rownames(scaled_trancript_counts) <- scaled_trancript_counts$target_id
+  }
+
 
   # Remove an extra column created from the dcast that contains the transcript ids,
   # take the log2 of the est_counts to plot them in more a representative way,
@@ -238,7 +273,14 @@ heatmap_plot <- function(sleuth_obj, genes, q_max = .05, test = "wt", iqf = 0, s
   # Gather the differentially expressed transcripts after running a wt or lrt
   all_results <- sleuth_object_result(sleuth_obj = sleuth_obj, all_data = FALSE, sig_data = FALSE, single_df = TRUE, retrived_from_model = TRUE, test = test)
   all_results <- all_results[all_results$ext_gene %in% genes, ]
+
+  if (sleuth_obj$gene_mode == TRUE){
+    all_results$target_id <- paste(all_results$ext_gene)
+  }
+  else {
   all_results$target_id <- paste(all_results$ext_gene, all_results$target_id, sep = " - ")
+  }
+
   if (is.numeric(q_max)) {
     all_results <- fdr_cutoff(all_results, q_cutoff = q_max)
   }
@@ -259,15 +301,23 @@ heatmap_plot <- function(sleuth_obj, genes, q_max = .05, test = "wt", iqf = 0, s
   transcript_p_val <- transcript_p_val[2:(length(unique(all_results$models)) + 1)]
   transcript_p_val[transcript_p_val == 0] <- NA
 
+  # Check the following 3 lines of code, with gene_agg FALSE
+  transcript_p_val <- transcript_p_val[rowSums(is.na(transcript_p_val)) != ncol(transcript_p_val),]
+  scaled_trancript_counts <- scaled_trancript_counts[(rownames(scaled_trancript_counts) %in% rownames(transcript_p_val)),]
+  scaled_trancript_count_matrix <- as.matrix(scaled_trancript_counts)
+
   # Heatmap Annotation Construction
   ht_opt(legend_border = "black", heatmap_border = TRUE, annotation_border = TRUE)
 
+  top_anno_df <- sleuth_obj$sample_to_covariates[, 1:ncol(sleuth_obj$sample_to_covariates)]
+  top_anno_df <- top_anno_df[order(top_anno_df[,1]),]
+  top_anno_df <- top_anno_df[-1]
   if (length(grouping_colours) == 0) {
-    ha_top <- HeatmapAnnotation(df = sleuth_obj$sample_to_covariates[, 2:ncol(sleuth_obj$sample_to_covariates)])
+    ha_top <- HeatmapAnnotation(df = top_anno_df)
   } else {
-    ha_top <- HeatmapAnnotation(df = sleuth_obj$sample_to_covariates[, 2:ncol(sleuth_obj$sample_to_covariates)], col = grouping_colours)
+    ha_top <- HeatmapAnnotation(df = top_anno_df, col = grouping_colours)
   }
-
+  
   # Generate gene significance heatmap annotation with asterisk.
   qvalue_col_fun <- colorRamp2(c(0, 1), c("white", "white"))
   model_names <- letters[1:length(colnames(transcript_p_val))]
@@ -313,23 +363,48 @@ heatmap_plot <- function(sleuth_obj, genes, q_max = .05, test = "wt", iqf = 0, s
   if (boxplot) {
     boxplot_vals <- apply(scaled_trancript_count_matrix, 1, function(v) median(as.numeric(v), na.rm = TRUE))
     boxplot_col <- colorRamp2(c(min(boxplot_vals), max(boxplot_vals)), c("blue", "red"))
-    ha_left <- rowAnnotation("Scaled Transcript Est Counts" = anno_boxplot(scaled_trancript_count_matrix, gp = gpar(fill = boxplot_col(boxplot_vals))))
-
-    ha_c <- Heatmap(scaled_trancript_count_matrix,
+    
+    if (sleuth_obj$gene_mode == TRUE){
+      ha_left <- rowAnnotation("Avg. Scaled Reads Per Base" = anno_boxplot(scaled_trancript_count_matrix, gp = gpar(fill = boxplot_col(boxplot_vals))))
+      ha_c <- Heatmap(scaled_trancript_count_matrix,
+                    name = "Scaled Reads Per Base", rect_gp = gpar(col = "white", lwd = 1), border_gp = gpar(col = "black"), clustering_distance_rows = "pearson", clustering_distance_columns = "pearson",
+                    row_title = "Genes", row_title_rot = 0, row_names_max_width = max_text_width(rownames(scaled_trancript_count_matrix), gp = gpar(fontsize = 12)),
+                    show_column_names = FALSE,
+                    na_col = "black",
+                    top_annotation = ha_top, left_annotation = ha_left, right_annotation = ha_right
+      )
+    }
+    else {
+      ha_left <- rowAnnotation("Scaled Transcript Est Counts" = anno_boxplot(scaled_trancript_count_matrix, gp = gpar(fill = boxplot_col(boxplot_vals))))
+      ha_c <- Heatmap(scaled_trancript_count_matrix,
       name = "Scaled Counts", rect_gp = gpar(col = "white", lwd = 1), border_gp = gpar(col = "black"), clustering_distance_rows = "pearson", clustering_distance_columns = "pearson",
       row_title = "Transcripts", row_title_rot = 0, row_names_max_width = max_text_width(rownames(scaled_trancript_count_matrix), gp = gpar(fontsize = 12)),
       show_column_names = FALSE,
       na_col = "black",
       top_annotation = ha_top, left_annotation = ha_left, right_annotation = ha_right
-    )
-  } else {
-    ha_c <- Heatmap(scaled_trancript_count_matrix,
+      )
+    }
+  }
+
+  else {
+    if (sleuth_obj$gene_mode == TRUE){
+      ha_c <- Heatmap(scaled_trancript_count_matrix,
+                    name = "Scaled Reads Per Base", rect_gp = gpar(col = "white", lwd = 1), border_gp = gpar(col = "black"), clustering_distance_rows = "pearson", clustering_distance_columns = "pearson",
+                    row_title = "Genes", row_title_rot = 0, row_names_max_width = max_text_width(rownames(scaled_trancript_count_matrix), gp = gpar(fontsize = 12)),
+                    show_column_names = FALSE,
+                    na_col = "black",
+                    top_annotation = ha_top, left_annotation = ha_left, right_annotation = ha_right
+      )
+    }
+    else {
+      ha_c <- Heatmap(scaled_trancript_count_matrix,
       name = "Scaled Counts", rect_gp = gpar(col = "white", lwd = 1), border_gp = gpar(col = "black"), clustering_distance_rows = "pearson", clustering_distance_columns = "pearson",
       row_title = "Transcripts", row_title_rot = 0, row_names_max_width = max_text_width(rownames(scaled_trancript_count_matrix), gp = gpar(fontsize = 12)),
       show_column_names = FALSE,
       na_col = "black",
       top_annotation = ha_top, right_annotation = ha_right
-    )
+      )
+    }
   }
-  draw(ha_c, annotation_legend_list = list(lgd_sig), merge_legend = TRUE, column_title = plot_title)
+  draw(ha_c, annotation_legend_list = list(lgd_sig), merge_legend = TRUE, column_title = plot_title, padding = unit(c(2, 20, 2, 2), "mm"))
 }

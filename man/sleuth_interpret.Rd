@@ -4,14 +4,14 @@
 \alias{sleuth_interpret}
 \title{Automate the running of sleuth_prep and sleuth_fit on all provided metadata files and the associated models}
 \usage{
-sleuth_interpret(data, target_map, num_core = 1)
+sleuth_interpret(data, num_core = 1, ...)
 }
 \arguments{
 \item{data}{A data frame containing metadata file name, metadata tibble file, model names, and model formulae}
 
-\item{target_map}{A data frame that contains the target_ids and their gene mapping to aggregate transcripts using sleuth_prep}
-
 \item{num_core}{An integer for the number of cores to be used for sleuth_prep}
+
+\item{...}{Can add in other parameters that will be passed to sleuth_prep}
 }
 \value{
 Sleuth object named using the associated metadata file name and processed with sleuth_prep() and sleuth_fit()

@@ -10,7 +10,9 @@ self_plot_pca(
   pc_y = 2L,
   units = "est_counts",
   color_by = NULL,
+  show_legend = TRUE,
   graph_name = "Sample Plot Name",
+  auto_save = FALSE,
   scaled = TRUE
 )
 }
@@ -25,9 +27,13 @@ self_plot_pca(
 
 \item{color_by}{Column name to colour the samples by. Default is NULL.}
 
+\item{show_legend}{Boolean value if the legend should be shown in the figure out not.}
+
 \item{graph_name}{Name of the graph. Default is "Sample Plot Name".}
 
-\item{scaled}{If the plot should be scaled to the amount of variation. Scale factor is 1:5.}
+\item{auto_save}{If TRUE, the plot will be saved automatically. Defaults to FALSE.}
+
+\item{scaled}{Only works if auto_save is TRUE. The plot will be automatically saved and scaled to the amount of variation per axis. Scale factor is 1:5.}
 }
 \description{
 Generate a PCA plot from a sleuth object with user-selected colour_by and title.

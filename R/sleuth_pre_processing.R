@@ -39,26 +39,44 @@
 #' # Given a sample data frame containing a metadata_file_name, metadata_file, model_name, and model_data (formulae),
 #' # create a sleuth object that has been processed using sleuth_prep() followed by sleuth_fit()
 #' sleuth_interpret(analysis_data, num_core = 3)
-sleuth_interpret <- function(data, num_core = 1, ...) {
-  extra_opts <- list(...)
-
+sleuth_interpret <- function(data, num_core = 1) {
   for (metadata_file_number in 1:length(data$metadata_name)) {
     metadata_file <- data.frame(data[metadata_file_number, 2])
     metadata_model_names <- unlist(strsplit(data$model_name[metadata_file_number], ","))
     metadata_model_formula <- unlist(strsplit(data$model_data[metadata_file_number], ","))
-
+    metadata_model_parameters <- data$model_parameters[metadata_file_number]
+    
+    
     for (metadata_model_number in 1:length(metadata_model_names)) {
-      so_holder_variable <- sleuth_prep(
-        sample_to_covariates = metadata_file,
-        full_model = as.formula(metadata_model_formula[metadata_model_number]),
-        num_cores = num_core,
-        ... = extra_opts)
+      if (metadata_model_parameters == ''){
+        var_list <- list(sample_to_covariates = data.frame(metadata_file),
+                         full_model = as.formula(metadata_model_formula[metadata_model_number]),
+                         num_cores = num_core)
       }
-
-      so_holder_variable <- sleuth_fit(obj = so_holder_variable)
-
+      else {
+        var_list <- list(sample_to_covariates = data.frame(metadata_file),
+                         full_model = as.formula(metadata_model_formula[metadata_model_number]),
+                         num_cores = num_core,
+                         eval(parse(text = paste0("list(",metadata_model_parameters,")"))))
+        var_holder <- unlist(var_list[4], recursive = FALSE)
+        var_list <- c(var_list[1:3], var_holder)
+        assign("foo", var_list, envir = .GlobalEnv)
+        }
+      
+      so_holder_variable <- do.call(sleuth_prep, var_list)
+    }
+    
+    if (metadata_model_parameters == ''){
+      so_holder_variable <- do.call(sleuth_fit, list(obj = so_holder_variable))
+    }
+    else{
+      # var_holder <- eval(parse(text = paste0("list(obj = ", so_holder_variable,")")))
+      # assign("foo", var_holder, envir = .GlobalEnv)
+      # var_list <- c(var_holder, var_list)
+      so_holder_variable <- do.call(sleuth_fit, c(list(obj = so_holder_variable), var_list))
+    }
+    
       sleuth_obj_name <- paste("so", metadata_model_names[metadata_model_number], sep = "_")
-
       assign(sleuth_obj_name, so_holder_variable, envir = .GlobalEnv)
     }
   }

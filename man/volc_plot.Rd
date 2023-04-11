@@ -6,6 +6,7 @@
 \usage{
 volc_plot(
   df,
+  labels = FALSE,
   label_column_name = "external_gene_name",
   x_axis_column_name = "b",
   y_axis_column_name = "qval",

@@ -4,7 +4,7 @@
 \alias{sleuth_interpret}
 \title{Automate the running of sleuth_prep and sleuth_fit on all provided metadata files and the associated models}
 \usage{
-sleuth_interpret(data, num_core = 1, ...)
+sleuth_interpret(data, num_core = 1)
 }
 \arguments{
 \item{data}{A data frame containing metadata file name, metadata tibble file, model names, and model formulae}

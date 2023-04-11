@@ -10,33 +10,52 @@
 #' filtered_scaled_transcript_counts(so_nominal, "ABH1", "sex", iqf = 0.25)
 filtered_scaled_transcript_counts <- function(sleuth_obj, genes) {
   # Obtain est_counts for all genes from the sleuth_obj
-
-  # if sleuth object gene agg is false:
-  if (sleuth_obj$gene_mode == FALSE){
-    scaled_trancript_counts <- sleuth_obj$obs_norm_filt %>% mutate(est_counts = est_counts * sleuth_obj$est_counts_sf)
-    # Get all the transcripts for the specific gene
-    gene_transcript_df <- sleuth_obj$target_mapping[sleuth_obj$target_mapping$ext_gene %in% genes, ]
-  }
   
-  else {
+  if (sleuth_obj$gene_mode == TRUE){
     # Obtain est_counts for all genes from the sleuth_obj
     scaled_trancript_counts <- sleuth_obj$obs_norm_filt %>% mutate(est_counts = scaled_reads_per_base * sleuth_obj$est_counts_sf)
-
+    
     # Get all the transcripts for the specific gene
     gene_transcript_df <- sleuth_obj$target_mapping[sleuth_obj$target_mapping$ext_gene %in% genes, ]
-    gene_transcript_df <- gene_transcript_df[-1]
-    colnames(gene_transcript_df) <- c("target_id", "ext_gene")
-  }  
-
-  # Filter all the transcript est_counts based on the gene_transcript_df
-  scaled_trancript_counts <- scaled_trancript_counts[scaled_trancript_counts$target_id %in% gene_transcript_df$target_id, ]
-  scaled_trancript_counts <- right_join(gene_transcript_df, scaled_trancript_counts, by = "target_id")
-
+    
+    # Filter all the transcript est_counts based on the gene_transcript_df
+    scaled_trancript_counts <- scaled_trancript_counts[scaled_trancript_counts$target_id %in% gene_transcript_df$ext_gene, ]
+    colnames(scaled_trancript_counts)[2] <- "ext_gene"
+    scaled_trancript_counts <- right_join(gene_transcript_df, scaled_trancript_counts, by = "ext_gene")
+  }
+  
+  else{
+    # If sleuth object gene agg is false:
+    if (is.null(sleuth_obj$gene_column)){
+      # Obtain est_counts for all genes from the sleuth_obj
+      scaled_trancript_counts <- sleuth_obj$obs_norm_filt %>% mutate(est_counts = est_counts * sleuth_obj$est_counts_sf)
+      
+      # Get all the transcripts for the specific gene
+      gene_transcript_df <- sleuth_obj$target_mapping[sleuth_obj$target_mapping$ext_gene %in% genes, ]
+      
+      # Filter all the transcript est_counts based on the gene_transcript_df
+      scaled_trancript_counts <- scaled_trancript_counts[scaled_trancript_counts$target_id %in% gene_transcript_df$target_id, ]
+      scaled_trancript_counts <- right_join(gene_transcript_df, scaled_trancript_counts, by = "target_id")
+    }
+    
+    else {
+      # Obtain est_counts for all genes from the sleuth_obj
+      scaled_trancript_counts <- sleuth_obj$obs_norm_filt %>% mutate(est_counts = est_counts * sleuth_obj$est_counts_sf)
+      
+      # Get all the transcripts for the specific gene
+      gene_transcript_df <- sleuth_obj$target_mapping[sleuth_obj$target_mapping$ext_gene %in% genes, ]
+      
+      gene_transcript_df <- gene_transcript_df[-1]
+      colnames(gene_transcript_df) <- c("target_id", "ext_gene")
+      scaled_trancript_counts <- scaled_trancript_counts[scaled_trancript_counts$target_id %in% gene_transcript_df$target_id, ]
+      scaled_trancript_counts <- right_join(gene_transcript_df, scaled_trancript_counts, by = "target_id")
+    }
+  }
   # Confirm that the transcripts based on the selected gene do exist in the sleuth_obj
   if (any(is.na(scaled_trancript_counts))) {
     return("Check to confirm that the gene list is correct.")
   }
-
+  
   return(scaled_trancript_counts)
 }
 

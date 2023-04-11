@@ -60,7 +60,6 @@ sleuth_interpret <- function(data, num_core = 1) {
                          eval(parse(text = paste0("list(",metadata_model_parameters,")"))))
         var_holder <- unlist(var_list[4], recursive = FALSE)
         var_list <- c(var_list[1:3], var_holder)
-        assign("foo", var_list, envir = .GlobalEnv)
         }
       
       so_holder_variable <- do.call(sleuth_prep, var_list)

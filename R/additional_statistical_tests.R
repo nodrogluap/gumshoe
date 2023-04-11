@@ -114,7 +114,6 @@ sleuth_kruskal_wallis <- function(sleuth_obj, gene, grouping, iqf = 0, threshold
   scaled_trancript_counts <- scaled_trancript_counts[scaled_trancript_counts$target_id %in% c(names(transcript_count_mean[transcript_count_mean > quant_val])), ]
 
   # Calculate the quantile based upon the user-selected iqf that the means that must be calculated must exceed
-  assign("filtered_scaled_trancript_counts", scaled_trancript_counts, envir = .GlobalEnv)
   kw_stat <- kruskal.test(est_counts ~ sample, data = scaled_trancript_counts)
   print(kw_stat)
 

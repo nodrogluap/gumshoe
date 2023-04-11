@@ -299,7 +299,6 @@ heatmap_plot <- function(sleuth_obj, genes, q_max = .05, test = "wt", iqf = 0, s
   scaled_transcript_counts <- scaled_transcript_counts[-1]
   scaled_transcript_counts <- log2(scaled_transcript_counts)
   scaled_transcript_counts[sapply(scaled_transcript_counts, is.infinite)] <- NA
-  assign("hmp_stc2", scaled_transcript_counts, envir = .GlobalEnv)
   
   # Calculate the quantile value based on all the est_counts for every transcript 
   # for the selected gene with a probability of the user selected iqf parameter. 
@@ -309,14 +308,12 @@ heatmap_plot <- function(sleuth_obj, genes, q_max = .05, test = "wt", iqf = 0, s
     transcript_mean <- apply(scaled_transcript_counts, 1, function(v) mean(as.numeric(v), na.rm = TRUE))
     quant_val <- quantile(scaled_transcript_counts, probs = iqf, na.rm = TRUE)
     scaled_transcript_counts <- scaled_transcript_counts[rownames(scaled_transcript_counts) %in% c(names(transcript_mean[transcript_mean > quant_val])), ]
-    assign("hmp_stc3", scaled_transcript_counts, envir = .GlobalEnv)
   }
   
   # Gather the differentially expressed transcripts after running a wt or lrt
   all_results <- sleuth_object_result(sleuth_obj = sleuth_obj, all_data = FALSE, 
                                       sig_data = FALSE, single_df = TRUE, 
                                       retrived_from_model = TRUE, test = test)
-  assign("hmp_ar1", all_results, envir = .GlobalEnv)
   
   if (sleuth_obj$gene_mode == TRUE){
     all_results <- all_results[all_results$target_id %in% genes, ]
@@ -330,8 +327,6 @@ heatmap_plot <- function(sleuth_obj, genes, q_max = .05, test = "wt", iqf = 0, s
   if (is.numeric(q_max)) {
     all_results <- fdr_cutoff(all_results, q_cutoff = q_max)
   }
-  
-  assign("hmp_ar3", all_results, envir = .GlobalEnv)
   
   # Obtain the q-value per transcript.
   transcript_p_val <- dcast(all_results, target_id ~ models, value.var = "qval", fun.aggregate = sum)

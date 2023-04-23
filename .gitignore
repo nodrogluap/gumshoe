@@ -9,3 +9,5 @@ data/tutorial_files.zip
 .Rhistory
 *.rda
 *.RData
+R/.idea/modules.xml
+R/.idea/R.iml

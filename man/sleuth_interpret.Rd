@@ -2,25 +2,23 @@
 % Please edit documentation in R/sleuth_pre_processing.R
 \name{sleuth_interpret}
 \alias{sleuth_interpret}
-\title{Automate the running of sleuth_prep and sleuth_fit on all provided metadata files and the associated models}
+\title{Automate the running of sleuth_prep and sleuth_fit on all provided metadata files and the associated models.}
 \usage{
 sleuth_interpret(data, num_core = 1)
 }
 \arguments{
-\item{data}{A data frame containing metadata file name, metadata tibble file, model names, and model formulae}
+\item{data}{A data frame containing metadata file name, metadata tibble file, model names, and model formulae.}
 
-\item{num_core}{An integer for the number of cores to be used for sleuth_prep}
-
-\item{...}{Can add in other parameters that will be passed to sleuth_prep}
+\item{num_core}{An integer for the number of cores to be used for sleuth_prep.}
 }
 \value{
-Sleuth object named using the associated metadata file name and processed with sleuth_prep() and sleuth_fit()
+Sleuth object named using the associated metadata file name and processed with sleuth_prep() and sleuth_fit().
 }
 \description{
-Automate the running of sleuth_prep and sleuth_fit on all provided metadata files and the associated models
+Automate the running of sleuth_prep and sleuth_fit on all provided metadata files and the associated models.
 }
 \examples{
 # Given a sample data frame containing a metadata_file_name, metadata_file, model_name, and model_data (formulae),
-# create a sleuth object that has been processed using sleuth_prep() followed by sleuth_fit()
+# create a sleuth object that has been processed using sleuth_prep() followed by sleuth_fit().
 sleuth_interpret(analysis_data, num_core = 3)
 }

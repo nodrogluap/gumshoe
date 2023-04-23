@@ -10,7 +10,7 @@ you are "spreading" on.}
 spread_abundance_by(abund, var, which_order)
 }
 \arguments{
-\item{abund}{the abundance \code{data.frame} from a \code{sleuth} object}
+\item{abund}{the abundance \code{data.frame} from a \code{sleuth} object.}
 
 \item{var}{a character array of length one. The variable for which to get "spread" on (e.g. "est_counts").}
 }

@@ -2,7 +2,8 @@
 % Please edit documentation in R/plotting_functions.R
 \name{volc_plot}
 \alias{volc_plot}
-\title{Generate a volcano plot from a data frame containing a gene name, q-value, and fold change with user-selected cutoffs and title.}
+\title{Generate a volcano plot from a data frame containing a gene name, q-value, and fold change with user-selected cutoffs
+and title.}
 \usage{
 volc_plot(
   df,
@@ -16,7 +17,7 @@ volc_plot(
 )
 }
 \arguments{
-\item{df}{A data frame or list containing ensemble transcript id's}
+\item{df}{A data frame or list containing ensemble transcript id's.}
 
 \item{label_column_name}{The column name of the data point labels. The default is external_gene_name, which is the column name from the output of the ensembl_to_id function.}
 
@@ -31,7 +32,8 @@ volc_plot(
 \item{graph_name}{Name of the graph. Default is "Sample Graph Name".}
 }
 \description{
-Generate a volcano plot from a data frame containing a gene name, q-value, and fold change with user-selected cutoffs and title.
+Generate a volcano plot from a data frame containing a gene name, q-value, and fold change with user-selected cutoffs
+and title.
 }
 \examples{
 # Create a volcano plot from a data frame with gene symbols, q-value, and FC.

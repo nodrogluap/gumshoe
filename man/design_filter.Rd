@@ -7,25 +7,25 @@
 design_filter(meta, model, row, min_reads = 5, min_prop = 0.47)
 }
 \arguments{
-\item{meta}{the same data frame that would be passed as the first argument to sleuth_prep}
+\item{meta}{the same data frame that would be passed as the first argument to sleuth_prep.}
 
-\item{model}{the regression model that would be passed as the second argument to sleuth_prep}
+\item{model}{the regression model that would be passed as the second argument to sleuth_prep.}
 
-\item{row}{the count data for a given transcript, as fed by sleuth_prep to the \code{filter_fun} method}
+\item{row}{the count data for a given transcript, as fed by sleuth_prep to the \code{filter_fun} method.}
 
-\item{min_reads}{minimum number of reads required to consider a transcript present in a sample (default value meant to match the behaviour of the default filter in Sleuth called basic_filter)}
+\item{min_reads}{minimum number of reads required to consider a transcript present in a sample (default value meant to match the behaviour of the default filter in Sleuth called basic_filter).}
 
-\item{min_prop}{minimum proportion of samples *in a given experimental factor combination* required to consider a transcript present in the experiment (default value meant to match the behaviour of the default filter in Sleuth called basic_filter although it looks for the proportion across ALL sample)}
+\item{min_prop}{minimum proportion of samples *in a given experimental factor combination* required to consider a transcript present in the experiment (default value meant to match the behaviour of the default filter in Sleuth called basic_filter although it looks for the proportion across ALL sample).}
 }
 \value{
-true or false, indicating whether or not the transcript in question passes the filter criteria
+true or false, indicating whether or not the transcript in question passes the filter criteria.
 }
 \description{
 Filter low expressed transcripts by taking into account the regression model.
 }
 \examples{
-# Given a sample metadata table with the columns \code{sample}, \code{path}, \code{treatment}, and \code{sex}
-# create a model with the two factors plus their interaction. Use a design filter so that for example a transcript that only shows up in treated males (1/4 of the dataset) will not be filtered out
+# Given a sample metadata table with the columns \code{sample}, \code{path}, \code{treatment}, and \code{sex}.
+# Create a model with the two factors plus their interaction. Use a design filter so that for example a transcript that only shows up in treated males (1/4 of the dataset) will not be filtered out
 # (as it would by the default filter which would require half of ALL sample to express the transcript).
 model <- ~treatment*sex
 so <- sleuth_prep(sample_meta, model, filter_fun=function(x){design_filter(sample_meta, model, x)})

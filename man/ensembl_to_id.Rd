@@ -2,22 +2,22 @@
 % Please edit documentation in R/sleuth_pre_processing.R
 \name{ensembl_to_id}
 \alias{ensembl_to_id}
-\title{Convert a given list of ensemble transcript id's into \code{ensembl_transcript_id}'s, \code{external_gene_name}'s, \code{ensembl_gene_id}'s, and the original transcript.id}
+\title{Convert a given list of ensemble transcript id's into ensembl_transcript_id's, external_gene_name's, ensembl_gene_id's, and the original transcript.id.}
 \usage{
 ensembl_to_id(sig_results, entire_gene_name = TRUE)
 }
 \arguments{
-\item{sig_results}{A data frame or list containing ensemble transcript id's}
+\item{sig_results}{A data frame or list containing ensemble transcript id's.}
 
 \item{entire_gene_name}{Set to FALSE if the non-abbreviated gene name is required. Default value is TRUE.}
 }
 \value{
-Converts the original data frame or list into a data frame with columns corresponding to \code{external_gene_name}'s, \code{description}'s, and the original \code{ensembl_transcript_id_version}.
+Converts the original data frame or list into a data frame with columns corresponding to external_gene_name's, description's, and the original ensembl_transcript_id_version.
 }
 \description{
-Convert a given list of ensemble transcript id's into \code{ensembl_transcript_id}'s, \code{external_gene_name}'s, \code{ensembl_gene_id}'s, and the original transcript.id
+Convert a given list of ensemble transcript id's into ensembl_transcript_id's, external_gene_name's, ensembl_gene_id's, and the original transcript.id.
 }
 \examples{
-# Convert a data frame of ensemble transcript id's
+# Convert a data frame of ensemble transcript id's.
 ensemble_to_id(wald_sig_results)
 }

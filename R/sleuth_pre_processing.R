@@ -77,9 +77,6 @@ sleuth_interpret <- function(data, num_core = 1) {
           do.call(sleuth_fit, list(obj = so_holder_variable))
       }
       else {
-        # var_holder <- eval(parse(text = paste0("list(obj = ", so_holder_variable,")")))
-        # assign("foo", var_holder, envir = .GlobalEnv)
-        # var_list <- c(var_holder, var_list)
         so_holder_variable <-
           do.call(sleuth_fit, c(list(obj = so_holder_variable), var_list))
       }
@@ -89,7 +86,6 @@ sleuth_interpret <- function(data, num_core = 1) {
       assign(sleuth_obj_name, so_holder_variable, envir = .GlobalEnv)
     }
   }
-  
 }
 
 #' Automated function to run all possible Wald tests on a given Sleuth object and the fitted model.

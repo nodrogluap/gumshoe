@@ -63,14 +63,14 @@ sleuth_interpret <- function(data, num_core = 1) {
         var_list <- c(var_list[1:3], var_holder)
       }
       
-      so_holder_variable <- do.call(sleuth_prep, var_list)
+      so_holder_variable <- do.call(sleuth_prep, var_list, envir = .GlobalEnv)
       
       if (metadata_model_parameters == '') {
-        so_holder_variable <- do.call(sleuth_fit, list(obj = so_holder_variable))
+        so_holder_variable <- do.call(sleuth_fit, list(obj = so_holder_variable), envir = .GlobalEnv)
       }
       
       else {
-        so_holder_variable <- do.call(sleuth_fit, c(list(obj = so_holder_variable), var_list))
+        so_holder_variable <- do.call(sleuth_fit, c(list(obj = so_holder_variable), var_list), envir = .GlobalEnv)
       }
       
       sleuth_obj_name <- paste("so", metadata_model_names[metadata_model_number], sep = "_")

@@ -105,7 +105,7 @@ sleuth_kruskal_wallis <-
       filtered_scaled_transcript_counts(sleuth_obj = sleuth_obj, genes = gene)
     
     # Merge the sample to covariate data with the filtered transcripts
-    s2c_df <- so_dropped_nominal$sample_to_covariates
+    s2c_df <- sleuth_obj$sample_to_covariates
     scaled_trancript_counts <-
       left_join(s2c_df, scaled_trancript_counts)
     
@@ -141,7 +141,9 @@ sleuth_kruskal_wallis <-
     print(kw_stat)
     
     # Run the wilcox pairwise test
-    sleuth_wilcox_pairwise(filtered_scaled_trancript_counts, grouping, cutoff = threshold)
+    print(sleuth_wilcox_pairwise(scaled_trancript_counts, grouping, cutoff = threshold))
+
+    return (scaled_trancript_counts)
   }
 
 #' Run a Wilcox pairwise comparison for a group across est_counts.
@@ -153,7 +155,7 @@ sleuth_kruskal_wallis <-
 #' @return Results of a pairwise Wilcox test to identify the significantly different groups given as letters, where different letters indicate significance.
 #' @examples
 #' # Given a dataframe that contains est_counts for a particular gene and grouping information, run the Wilcox pairwise comparison of the est_counts factor between the selected group.
-#' sleuth_kruskal_wallis(scaled_transcript_counts, "sex")
+#' sleuth_wilcox_pairwise(scaled_transcript_counts, "sex")
 sleuth_wilcox_pairwise <- function(data, grouping, cutoff = 0.05) {
   pw_w_test <-
     pairwise.wilcox.test(data$est_counts, data[, grouping], p.adjust.method = "BH")
@@ -166,7 +168,7 @@ sleuth_wilcox_pairwise <- function(data, grouping, cutoff = 0.05) {
       Letters = letters,
       reverse = FALSE
     )
-  pw_w_test_letter$Letters
+  return(pw_w_test_letter$Letters)
 }
 
 #' Calculate and return the sum of the RSS values avalible for the model, model

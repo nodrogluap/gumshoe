@@ -168,6 +168,7 @@ sleuth_wilcox_pairwise <- function(data, grouping, cutoff = 0.05) {
       Letters = letters,
       reverse = FALSE
     )
+  print(pw_w_test)
   return(pw_w_test_letter$Letters)
 }
 

@@ -157,8 +157,8 @@ sleuth_reliable_target_ids <-
       pull(1)
   }
 
-#' Calculate the Residual Sum of Squares of the Sleuth object's full regression model
-sleuth_model_rss <-
+# Calculate the Residual Sum of Squares of the Sleuth object's full regression model
+sleuth_model_basic_rss <-
   function(sleuth_obj) {
     sum(sleuth_obj$fits$full$summary[, 2])
   }

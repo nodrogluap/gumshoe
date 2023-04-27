@@ -21,5 +21,5 @@ Run a Wilcox pairwise comparison for a group across est_counts.
 }
 \examples{
 # Given a dataframe that contains est_counts for a particular gene and grouping information, run the Wilcox pairwise comparison of the est_counts factor between the selected group.
-sleuth_kruskal_wallis(scaled_transcript_counts, "sex")
+sleuth_wilcox_pairwise(scaled_transcript_counts, "sex")
 }

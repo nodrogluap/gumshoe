@@ -349,6 +349,8 @@ isoform_boxplot <-
 #' @param sig_markers Markers of signifigance. Defaults to \*, \*\*, \*\*\*.
 #' @param grouping_colours A list of groups and the associated level-colour pairs. See example for syntax. Defaults to empty list.
 #' @param boxplot A Boolean value that indicates whether a box plot of scaled transcripts should be displayed.
+#' @param clusterRows A Boolean value that indicates whether the rows should be clustered.
+#' @param clusterColumns A Boolean value that indicates whether the columns should be clustered.
 #'
 #' @export
 #' @examples
@@ -364,7 +366,9 @@ heatmap_plot <-
            sig_markers = c("*", "**", "***"),
            grouping_colours = list(),
            plot_title = "Sleuth Heatmap",
-           boxplot = TRUE) {
+           boxplot = TRUE,
+           clusterRows = FALSE,
+           clusterColumn = FALSE) {
     # Retrieve the scaled transcript counts for the set of genes passed to the function
     scaled_transcript_counts <-
       filtered_scaled_transcript_counts(sleuth_obj = sleuth_obj, genes = genes)
@@ -670,11 +674,45 @@ heatmap_plot <-
         )
       }
     }
-    draw(
-      ha_c,
-      annotation_legend_list = list(lgd_sig),
-      merge_legend = TRUE,
-      column_title = plot_title,
-      padding = unit(c(2, 20, 2, 2), "mm")
-    )
+    if (clusterRows &&
+        clusterColumn) {
+      draw(
+        ha_c,
+        annotation_legend_list = list(lgd_sig),
+        merge_legend = TRUE,
+        column_title = plot_title,
+        padding = unit(c(2, 20, 2, 2), "mm")
+      )
+    }
+    else if (clusterRows) {
+      draw(
+        ha_c,
+        annotation_legend_list = list(lgd_sig),
+        merge_legend = TRUE,
+        column_title = plot_title,
+        padding = unit(c(2, 20, 2, 2), "mm"),
+        cluster_columns = FALSE
+      )
+    }
+    else if (clusterColumn) {
+      draw(
+        ha_c,
+        annotation_legend_list = list(lgd_sig),
+        merge_legend = TRUE,
+        column_title = plot_title,
+        padding = unit(c(2, 20, 2, 2), "mm"),
+        cluster_rows = FALSE
+      )
+    }
+    else{
+      draw(
+        ha_c,
+        annotation_legend_list = list(lgd_sig),
+        merge_legend = TRUE,
+        column_title = plot_title,
+        padding = unit(c(2, 20, 2, 2), "mm"),
+        cluster_rows = FALSE,
+        cluster_columns = FALSE
+      )
+    }
   }

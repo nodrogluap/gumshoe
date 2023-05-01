@@ -14,7 +14,9 @@ heatmap_plot(
   sig_markers = c("*", "**", "***"),
   grouping_colours = list(),
   plot_title = "Sleuth Heatmap",
-  boxplot = TRUE
+  boxplot = TRUE,
+  clusterRows = FALSE,
+  clusterColumn = FALSE
 )
 }
 \arguments{
@@ -35,6 +37,10 @@ heatmap_plot(
 \item{grouping_colours}{A list of groups and the associated level-colour pairs. See example for syntax. Defaults to empty list.}
 
 \item{boxplot}{A Boolean value that indicates whether a box plot of scaled transcripts should be displayed.}
+
+\item{clusterRows}{A Boolean value that indicates whether the rows should be clustered.}
+
+\item{clusterColumns}{A Boolean value that indicates whether the columns should be clustered.}
 }
 \description{
 Generate a isoform level heat map. Can only show a maximum of three genes at the same time.

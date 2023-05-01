@@ -584,7 +584,8 @@ heatmap_plot <-
             scaled_transcript_count_matrix,
             gp = gpar(fill = boxplot_col(boxplot_vals))
           ))
-        ha_c <- Heatmap(
+        if (clusterColumn){
+          ha_c <- Heatmap(
           scaled_transcript_count_matrix,
           name = "Scaled Reads Per Base",
           rect_gp = gpar(col = "white", lwd = 1),
@@ -601,8 +602,28 @@ heatmap_plot <-
           na_col = "black",
           top_annotation = ha_top,
           left_annotation = ha_left,
-          right_annotation = ha_right
-        )
+          right_annotation = ha_right)
+        }
+        else{
+        ha_c <- Heatmap(
+        scaled_transcript_count_matrix,
+        name = "Scaled Reads Per Base",
+        rect_gp = gpar(col = "white", lwd = 1),
+        border_gp = gpar(col = "black"),
+        clustering_distance_rows = "pearson",
+        clustering_distance_columns = "pearson",
+        row_title = "Genes",
+        row_title_rot = 0,
+        row_names_max_width = max_text_width(
+          rownames(scaled_transcript_count_matrix),
+          gp = gpar(fontsize = 12)
+        ),
+        show_column_names = FALSE,
+        na_col = "black",
+        top_annotation = ha_top,
+        left_annotation = ha_left,
+        right_annotation = ha_right, cluster_columns = FALSE)
+        }
       }
       else {
         ha_left <-
@@ -610,6 +631,7 @@ heatmap_plot <-
             scaled_transcript_count_matrix,
             gp = gpar(fill = boxplot_col(boxplot_vals))
           ))
+        if (clusterColumn){
         ha_c <- Heatmap(
           scaled_transcript_count_matrix,
           name = "Scaled Counts",
@@ -629,10 +651,33 @@ heatmap_plot <-
           left_annotation = ha_left,
           right_annotation = ha_right
         )
+        }
+        else{
+          ha_c <- Heatmap(
+            scaled_transcript_count_matrix,
+            name = "Scaled Counts",
+            rect_gp = gpar(col = "white", lwd = 1),
+            border_gp = gpar(col = "black"),
+            clustering_distance_rows = "pearson",
+            clustering_distance_columns = "pearson",
+            row_title = "Transcripts",
+            row_title_rot = 0,
+            row_names_max_width = max_text_width(
+              rownames(scaled_transcript_count_matrix),
+              gp = gpar(fontsize = 12)
+            ),
+            show_column_names = FALSE,
+            na_col = "black",
+            top_annotation = ha_top,
+            left_annotation = ha_left,
+            right_annotation = ha_right, cluster_columns = FALSE
+          )
+        }
       }
     }
     else {
       if (sleuth_obj$gene_mode == TRUE) {
+        if (clusterColumn){
         ha_c <- Heatmap(
           scaled_transcript_count_matrix,
           name = "Scaled Reads Per Base",
@@ -652,8 +697,31 @@ heatmap_plot <-
           left_annotation = ha_left,
           right_annotation = ha_right
         )
+        }
+        else{
+          ha_c <- Heatmap(
+            scaled_transcript_count_matrix,
+            name = "Scaled Reads Per Base",
+            rect_gp = gpar(col = "white", lwd = 1),
+            border_gp = gpar(col = "black"),
+            clustering_distance_rows = "pearson",
+            clustering_distance_columns = "pearson",
+            row_title = "Genes",
+            row_title_rot = 0,
+            row_names_max_width = max_text_width(
+              rownames(scaled_transcript_count_matrix),
+              gp = gpar(fontsize = 12)
+            ),
+            show_column_names = FALSE,
+            na_col = "black",
+            top_annotation = ha_top,
+            left_annotation = ha_left,
+            right_annotation = ha_right, cluster_columns = FALSE
+          )
+        }
       }
       else {
+        if (clusterColumn){
         ha_c <- Heatmap(
           scaled_transcript_count_matrix,
           name = "Scaled Counts",
@@ -672,36 +740,36 @@ heatmap_plot <-
           top_annotation = ha_top,
           right_annotation = ha_right
         )
+        }
+        else{
+          ha_c <- Heatmap(
+            scaled_transcript_count_matrix,
+            name = "Scaled Counts",
+            rect_gp = gpar(col = "white", lwd = 1),
+            border_gp = gpar(col = "black"),
+            clustering_distance_rows = "pearson",
+            clustering_distance_columns = "pearson",
+            row_title = "Transcripts",
+            row_title_rot = 0,
+            row_names_max_width = max_text_width(
+              rownames(scaled_transcript_count_matrix),
+              gp = gpar(fontsize = 12)
+            ),
+            show_column_names = FALSE,
+            na_col = "black",
+            top_annotation = ha_top,
+            right_annotation = ha_right, cluster_columns = FALSE
+          )
+        }
       }
     }
-    if (clusterRows &&
-        clusterColumn) {
+    if (clusterRows) {
       draw(
         ha_c,
         annotation_legend_list = list(lgd_sig),
         merge_legend = TRUE,
         column_title = plot_title,
         padding = unit(c(2, 20, 2, 2), "mm")
-      )
-    }
-    else if (clusterRows) {
-      draw(
-        ha_c,
-        annotation_legend_list = list(lgd_sig),
-        merge_legend = TRUE,
-        column_title = plot_title,
-        padding = unit(c(2, 20, 2, 2), "mm"),
-        cluster_columns = FALSE
-      )
-    }
-    else if (clusterColumn) {
-      draw(
-        ha_c,
-        annotation_legend_list = list(lgd_sig),
-        merge_legend = TRUE,
-        column_title = plot_title,
-        padding = unit(c(2, 20, 2, 2), "mm"),
-        cluster_rows = FALSE
       )
     }
     else{
@@ -711,8 +779,8 @@ heatmap_plot <-
         merge_legend = TRUE,
         column_title = plot_title,
         padding = unit(c(2, 20, 2, 2), "mm"),
-        cluster_rows = FALSE,
-        cluster_columns = FALSE
+        cluster_rows = FALSE
       )
     }
   }
+

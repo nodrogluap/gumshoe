@@ -115,7 +115,7 @@ sleuth_kruskal_wallis <-
     
     # Merge the scaled transcript counts and the s2c_df
     scaled_trancript_counts <-
-      left_join(s2c_df[ncol(s2c_df)], scaled_trancript_counts)
+      left_join(s2c_df, scaled_trancript_counts)
     
     # Create a named list with the format (transcript name, mean est_counts) for each transcript
     transcript_count_mean <- list()

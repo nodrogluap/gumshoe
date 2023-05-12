@@ -105,7 +105,7 @@ sleuth_kruskal_wallis <-
     # Create a new column with a factor groupings
     s2c_df <- sleuth_obj$sample_to_covariates
     colNames = colnames(s2c_df[, -1])
-    s2c_df$pasted <-
+    s2c_df$factor_group <-
       apply(
         s2c_df[, colNames, drop = F],
         MARGIN = 1,
@@ -136,7 +136,7 @@ sleuth_kruskal_wallis <-
     
     # Calculate the quantile based upon the user-selected iqf that the means that must be calculated must exceed
     kw_stat <-
-      kruskal.test(est_counts ~ sample, data = scaled_transcript_counts)
+      kruskal.test(est_counts ~ factor_group, data = scaled_transcript_counts)
     print(kw_stat)
     
     # Run the wilcox pairwise test

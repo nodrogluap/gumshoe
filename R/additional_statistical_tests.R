@@ -11,7 +11,7 @@
 filtered_scaled_transcript_counts <- function(sleuth_obj, genes) {
   if (sleuth_obj$gene_mode == TRUE) {
     # Obtain est_counts for all genes from the sleuth_obj
-    scaled_trancript_counts <-
+    scaled_transcript_counts <-
       sleuth_obj$obs_norm_filt %>% mutate(est_counts = scaled_reads_per_base * sleuth_obj$est_counts_sf)
     
     # Get all the transcripts for the specific gene
@@ -19,18 +19,18 @@ filtered_scaled_transcript_counts <- function(sleuth_obj, genes) {
       sleuth_obj$target_mapping[sleuth_obj$target_mapping$ext_gene %in% genes,]
     
     # Filter all the transcript est_counts based on the gene_transcript_df
-    scaled_trancript_counts <-
-      scaled_trancript_counts[scaled_trancript_counts$target_id %in% gene_transcript_df$ext_gene,]
-    colnames(scaled_trancript_counts)[2] <- "ext_gene"
-    scaled_trancript_counts <-
-      right_join(gene_transcript_df, scaled_trancript_counts, by = "ext_gene")
+    scaled_transcript_counts <-
+      scaled_transcript_counts[scaled_transcript_counts$target_id %in% gene_transcript_df$ext_gene,]
+    colnames(scaled_transcript_counts)[2] <- "ext_gene"
+    scaled_transcript_counts <-
+      right_join(gene_transcript_df, scaled_transcript_counts, by = "ext_gene")
   }
   
   else {
     # If sleuth object gene agg is false:
     if (is.null(sleuth_obj$gene_column)) {
       # Obtain est_counts for all genes from the sleuth_obj
-      scaled_trancript_counts <-
+      scaled_transcript_counts <-
         sleuth_obj$obs_norm_filt %>% mutate(est_counts = est_counts * sleuth_obj$est_counts_sf)
       
       # Get all the transcripts for the specific gene
@@ -38,15 +38,15 @@ filtered_scaled_transcript_counts <- function(sleuth_obj, genes) {
         sleuth_obj$target_mapping[sleuth_obj$target_mapping$ext_gene %in% genes,]
       
       # Filter all the transcript est_counts based on the gene_transcript_df
-      scaled_trancript_counts <-
-        scaled_trancript_counts[scaled_trancript_counts$target_id %in% gene_transcript_df$target_id,]
-      scaled_trancript_counts <-
-        right_join(gene_transcript_df, scaled_trancript_counts, by = "target_id")
+      scaled_transcript_counts <-
+        scaled_transcript_counts[scaled_transcript_counts$target_id %in% gene_transcript_df$target_id,]
+      scaled_transcript_counts <-
+        right_join(gene_transcript_df, scaled_transcript_counts, by = "target_id")
     }
     
     else {
       # Obtain est_counts for all genes from the sleuth_obj
-      scaled_trancript_counts <-
+      scaled_transcript_counts <-
         sleuth_obj$obs_norm_filt %>% mutate(est_counts = est_counts * sleuth_obj$est_counts_sf)
       
       # Get all the transcripts for the specific gene
@@ -55,18 +55,18 @@ filtered_scaled_transcript_counts <- function(sleuth_obj, genes) {
       
       gene_transcript_df <- gene_transcript_df[-1]
       colnames(gene_transcript_df) <- c("target_id", "ext_gene")
-      scaled_trancript_counts <-
-        scaled_trancript_counts[scaled_trancript_counts$target_id %in% gene_transcript_df$target_id,]
-      scaled_trancript_counts <-
-        right_join(gene_transcript_df, scaled_trancript_counts, by = "target_id")
+      scaled_transcript_counts <-
+        scaled_transcript_counts[scaled_transcript_counts$target_id %in% gene_transcript_df$target_id,]
+      scaled_transcript_counts <-
+        right_join(gene_transcript_df, scaled_transcript_counts, by = "target_id")
     }
   }
   # Confirm that the transcripts based on the selected gene do exist in the sleuth_obj
-  if (any(is.na(scaled_trancript_counts))) {
+  if (any(is.na(scaled_transcript_counts))) {
     return("Check to confirm that the gene list is correct.")
   }
   
-  return(scaled_trancript_counts)
+  return(scaled_transcript_counts)
 }
 
 #' Run a Kruskal-Wallis One-Way ANOVA on non-parametric data at the isoform level
@@ -99,7 +99,7 @@ sleuth_kruskal_wallis <-
     }
     
     # Retrieve the scaled transcript counts for the gene passed to the function
-    scaled_trancript_counts <-
+    scaled_transcript_counts <-
       filtered_scaled_transcript_counts(sleuth_obj = sleuth_obj, genes = gene)
     
     # Create a new column with a factor groupings
@@ -114,35 +114,35 @@ sleuth_kruskal_wallis <-
       )
     
     # Merge the scaled transcript counts and the s2c_df
-    scaled_trancript_counts <-
-      left_join(s2c_df, scaled_trancript_counts)
+    scaled_transcript_counts <-
+      left_join(s2c_df, scaled_transcript_counts)
     
     # Create a named list with the format (transcript name, mean est_counts) for each transcript
     transcript_count_mean <- list()
-    for (transcript in unique(scaled_trancript_counts$target_id)) {
+    for (transcript in unique(scaled_transcript_counts$target_id)) {
       count_mean <-
-        mean(scaled_trancript_counts[scaled_trancript_counts$target_id == transcript, "est_counts"])
+        mean(scaled_transcript_counts[scaled_transcript_counts$target_id == transcript, "est_counts"])
       transcript_count_mean[[transcript]] <-
         c(transcript_count_mean[[transcript]], count_mean)
     }
     
     # Calculate the quantile value based on all the est_counts for every transcript for the selected gene with a probability of the user selected iqf parameter
     quant_val <-
-      quantile(scaled_trancript_counts$est_counts, probs = iqf)
+      quantile(scaled_transcript_counts$est_counts, probs = iqf)
     
     # Remove all the transcripts that do not have an average est_count that is greater than the quant_val
-    scaled_trancript_counts <-
-      scaled_trancript_counts[scaled_trancript_counts$target_id %in% c(names(transcript_count_mean[transcript_count_mean > quant_val])),]
+    scaled_transcript_counts <-
+      scaled_transcript_counts[scaled_transcript_counts$target_id %in% c(names(transcript_count_mean[transcript_count_mean > quant_val])),]
     
     # Calculate the quantile based upon the user-selected iqf that the means that must be calculated must exceed
     kw_stat <-
-      kruskal.test(est_counts ~ sample, data = scaled_trancript_counts)
+      kruskal.test(est_counts ~ sample, data = scaled_transcript_counts)
     print(kw_stat)
     
     # Run the wilcox pairwise test
-    print(sleuth_wilcox_pairwise(scaled_trancript_counts, cutoff = threshold))
+    print(sleuth_wilcox_pairwise(scaled_transcript_counts, cutoff = threshold))
     
-    return (scaled_trancript_counts)
+    return (scaled_transcript_counts)
   }
 
 #' Run a Wilcox pairwise comparison for a group across est_counts.
@@ -156,7 +156,7 @@ sleuth_kruskal_wallis <-
 #' sleuth_wilcox_pairwise(scaled_transcript_counts, "sex")
 sleuth_wilcox_pairwise <- function(data, cutoff = 0.05) {
   pw_w_test <-
-    pairwise.wilcox.test(data$est_counts, scaled_trancript_counts$factor_group, p.adjust.method = "BH")
+    pairwise.wilcox.test(data$est_counts, data$factor_group, p.adjust.method = "BH")
   pw_w_test$p.value[which(is.nan(pw_w_test$p.value))] <- 1
   pw_w_test_letter <-
     multcompLetters(

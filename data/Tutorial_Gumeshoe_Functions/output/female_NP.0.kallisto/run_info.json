@@ -1,0 +1,13 @@
+{
+	"n_targets": 117494,
+	"n_bootstraps": 40,
+	"n_processed": 14089533,
+	"n_pseudoaligned": 8763169,
+	"n_unique": 3565323,
+	"p_pseudoaligned": 62.2,
+	"p_unique": 25.3,
+	"kallisto_version": "0.46.1",
+	"index_version": 10,
+	"start_time": "Tue Apr 19 12:54:29 2022",
+	"call": "kallisto quant -t 12 -b 40 -i /home/gurveer.gill1/datasets/m39.refMrna --single -l 180 -s 20 -o /home/gurveer.gill1/gumshoe_tutorial/output/female_NP.0.fastq.kallisto /work/gordon_lab/lumbar_dorsal_root_ganglion/new/female_NP.0.fastq"
+}

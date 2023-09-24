@@ -867,3 +867,124 @@ plotFromReduedDim <- function(object = NULL, ggPlotList = NULL,
   
   plot_out
 }
+
+#' Generate n number of piecharts, where n factors levels of the seurat clusters or a unique metadata feature
+#'
+#' @param object An existing Seurat object.
+#' @param meta_feature The metadata feature that is either highlighted when plotting clusters, or  pie charts are split by when highlight clusters.
+#' @param plot_by Character string of either 'clusters' or 'others', denoting what to split pie charts by.
+#' @param facet Boolean value to denote if the plot should have facet_wrap applied.
+#' @param include_labels Boolean value to denote if the plot should have labels for each slice.
+#'
+#' @export
+#' @examples
+#' # Create a pie chart with labels and apply facet_wrap with custom parameters after
+#' plot <- cluster_identities(object = seurat_object, meta_feature = "collection.date", plot_by = 'clusters', facet = FALSE, include_labels = TRUE)
+#' plot + facet_wrap(~ combined)
+cluster_identities <- function(object, meta_feature, plot_by = 'clusters', 
+                               facet = TRUE, include_labels = TRUE) {
+  # Check that the metadata feature is present in the object.
+  if (!(meta_feature %in% colnames(object@meta.data))){
+    return("Chosen metadata feature cannot be found in the seurat object provided.")
+  }
+  # Check that the plotting selection is correct.
+  if (!(plot_by == 'clusters' | plot_by == 'other')){
+    return("Incorrect plot_by variables.")
+  }
+  
+  
+  object_metadata <- object@meta.data
+  
+  # Get the column index for the feature selected and factorize the column
+  metadata_col <- grep(meta_feature, colnames(object_metadata))
+  object_metadata[,metadata_col] <- factor(object_metadata[,metadata_col])
+  
+  # Explicitly define the clusters as clusters
+  object_metadata$seurat_clusters <- paste("Cluster ", object_metadata$seurat_clusters)
+  
+  # Generate a ggplot with n number of pie charts, where n is the number of seurat clusters factors
+  if (plot_by == 'clusters'){
+    # Manipulate object_metadata to get a count and percentage of metadata_feature cells per cluster, and total cells per cluster.
+    object_metadata <- object_metadata %>%
+      group_by_("seurat_clusters", meta_feature) %>%
+      summarise(count = n()) %>%
+      mutate(count_per = count/sum(count)) %>%
+      group_by_('seurat_clusters') %>%
+      mutate(total=sum(count))
+    
+    object_metadata$combined <- do.call(paste, c(object_metadata[c(1,5)], sep = "\nTotal Cells = "))
+    
+    # Define the y-value for the label plot locations and rename the labelling column
+    label_locations <- object_metadata %>% 
+      mutate(
+        cs = rev(cumsum(rev(count_per))), 
+        pos = count_per/2 + lead(cs, 1),
+        pos = if_else(is.na(pos), count_per/2, pos))
+    colnames(label_locations)[3] <- 'label' 
+    
+    out_plot <- ggplot(data = object_metadata, 
+                       aes_string(x = factor(1), y = "count_per", fill = meta_feature))
+  }
+  
+  # Generate a ggplot with n number of pie charts, where n is the number of metadata_feature factors
+  else if (plot_by == 'other'){
+    # Manipulate object_metadata to get a count and percentage of clusters cells per metadata_feature, and total cells per metadata_feature.
+    object_metadata <- object_metadata %>%
+      group_by_("seurat_clusters", meta_feature) %>%
+      summarise(count = n()) %>%
+      group_by_(meta_feature) %>%
+      mutate(per = count/sum(count),
+             total = sum(count))
+    
+    object_metadata$combined <- do.call(paste, c(object_metadata[c(2,5)], sep = "\nTotal Cells = "))
+    
+    # Define the y-value for the label plot locations, convert the decimals to whole number %, and rename the labelling column 
+    label_locations <- object_metadata %>% 
+      mutate(
+        cs = rev(cumsum(rev(per))), 
+        pos = per/2 + lead(cs, 1),
+        pos = if_else(is.na(pos), per/2, pos))
+    label_locations$per <- paste(round(label_locations$per*100, 2), '%', sep='')
+    colnames(label_locations)[4] <- 'label' 
+    
+    out_plot <- ggplot(data = object_metadata, 
+                       aes(x = factor(1), y = per, fill=seurat_clusters))
+  }
+  
+  if (facet && include_labels){  
+    out_plot <- out_plot + 
+      geom_bar(stat = "identity", position = position_fill(), width = 1, color="white") +
+      geom_text_repel(data = label_locations, aes(y = pos, label = label), 
+                      force = 1, nudge_x = 1, min.segment.length = 0) + 
+      coord_polar("y", start = 0) +
+      facet_wrap(~ combined) +
+      theme_void() + 
+      theme(strip.text.x = element_text(face = "bold"))
+  }
+  else if (facet){
+    out_plot <- out_plot + 
+      geom_bar(stat = "identity", position = position_fill(), width = 1, color="white") +
+      coord_polar("y", start = 0) +
+      facet_wrap(~ combined) +
+      theme_void() + 
+      theme(strip.text.x = element_text(face = "bold"))
+  }
+  else if (include_labels){
+    out_plot <- out_plot + 
+      geom_bar(stat = "identity", position = position_fill(), width = 1, color="white") +
+      geom_text_repel(data = label_locations, aes(y = pos, label = label), 
+                      force = 1, nudge_x = 1, min.segment.length = 0) + 
+      coord_polar("y", start = 0) +
+      theme_void() + 
+      theme(strip.text.x = element_text(face = "bold"))
+  }
+  else{
+    out_plot <- out_plot + 
+      geom_bar(stat = "identity", position = position_fill(), width = 1, color="white") +
+      coord_polar("y", start = 0) +
+      theme_void() + 
+      theme(strip.text.x = element_text(face = "bold"))
+  }
+  
+  out_plot
+}

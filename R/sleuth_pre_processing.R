@@ -1,38 +1,9 @@
-# Additional pre-processing functions to complement Gumshoe for Sleuth analysis.
-
-# Required libraries ----
-# library(tidyverse)
-# library(sleuth)
-# library(biomaRt)
-
-
-# Parameters ----
-# Generate the necessary models for sleuth to run. There are five in total:
-# model_nominal, model_quant_linear/log/exp, and model_two_binary_factors.
-
-# Define the metadata files, associated models, and the corresponding model
-# formula to be used. The `I` before the mathematical expressions makes the
-# expression uninterpreted until Sleuth processes the model. NOTE: The order
-# of the model data must be align with the model names.
-# metadata_names <- c()
-# model_names <- c()
-# model_data <- c()
-
-
-# Analysis data frame creation and metadata manipulation ----
-# The analysis data file contains the metadata file name, the metadata file, the
-# model names, and the model formula.
-# analysis_data <- data.frame(metadata_name = metadata_names, metadata_file = tibble(list(metadata)), model_name = model_names, model_data = model_data)
-# View(analysis_data)
-
-
-# Functions ----
-#' Automate the running of sleuth_prep and sleuth_fit on all provided metadata files and the associated models.
+#' Automated function to run sleuth_prep and sleuth_fit on all of the provided metadata files and associated models.
 #'
-#' @param data A data frame containing metadata file name, metadata tibble file, model names, and model formulae.
+#' @param data A data frame containing metadata file name, metadata tibble file, model names, model formulae, and arguments to pass to sleuth_prep()/sleuth_fit().
 #' @param num_core An integer for the number of cores to be used for sleuth_prep.
 #'
-#' @return Sleuth object named using the associated metadata file name and processed with sleuth_prep() and sleuth_fit().
+#' @return Sleuth object processed with sleuth_prep() and sleuth_fit() and named using the associated metadata file name.
 #' @export
 #' @examples
 #' # Given a sample data frame containing a metadata_file_name, metadata_file, model_name, and model_data (formulae),
@@ -40,58 +11,49 @@
 #' sleuth_interpret(analysis_data, num_core = 3)
 sleuth_interpret <- function(data, num_core = 1) {
   for (metadata_file_number in 1:length(data$metadata_name)) {
+    # Isolate the relevant information from the data argument.
     metadata_file <- data.frame(data[metadata_file_number, 2])
-    metadata_model_names <-
-      unlist(strsplit(data$model_name[metadata_file_number], ","))
-    metadata_model_formula <-
-      unlist(strsplit(data$model_data[metadata_file_number], ","))
-    metadata_model_parameters <-
-      data$model_parameters[metadata_file_number]
+    metadata_model_names <- unlist(strsplit(data$model_name[metadata_file_number], ","))
+    metadata_model_formula <- unlist(strsplit(data$model_data[metadata_file_number], ","))
+    metadata_model_parameters <- data$model_parameters[metadata_file_number]
     
     
     for (metadata_model_number in 1:length(metadata_model_names)) {
+      # Parse the user passed arguments
       if (metadata_model_parameters == '') {
-        var_list <- list(
-          sample_to_covariates = data.frame(metadata_file),
-          full_model = as.formula(metadata_model_formula[metadata_model_number]),
-          num_cores = num_core
-        )
+        var_list <- list(sample_to_covariates = data.frame(metadata_file),
+                         full_model = as.formula(metadata_model_formula[metadata_model_number]),
+                         num_cores = num_core)
       }
-      
       else {
-        var_list <- list(
-          sample_to_covariates = data.frame(metadata_file),
-          full_model = as.formula(metadata_model_formula[metadata_model_number]),
-          num_cores = num_core,
-          eval(parse(
-            text = paste0("list(", metadata_model_parameters, ")")
-          ))
-        )
+        var_list <- list(sample_to_covariates = data.frame(metadata_file),
+                         full_model = as.formula(metadata_model_formula[metadata_model_number]),
+                         num_cores = num_core,
+                         eval(parse(text = paste0("list(", metadata_model_parameters, ")"))))
+        
         var_holder <- unlist(var_list[4], recursive = FALSE)
         var_list <- c(var_list[1:3], var_holder)
       }
       
-      so_holder_variable <-
-        do.call(sleuth_prep, var_list, envir = .GlobalEnv)
+      # Prep the sleuth object
+      so_holder_variable <- do.call(sleuth_prep, var_list, envir = .GlobalEnv)
       
+      # Fit the sleuth object
       if (metadata_model_parameters == '') {
-        so_holder_variable <-
-          do.call(sleuth_fit, list(obj = so_holder_variable), envir = .GlobalEnv)
+        so_holder_variable <- do.call(sleuth_fit, list(obj = so_holder_variable), envir = .GlobalEnv)
       }
-      
       else {
-        so_holder_variable <-
-          do.call(sleuth_fit, c(list(obj = so_holder_variable), var_list), envir = .GlobalEnv)
+        so_holder_variable <- do.call(sleuth_fit, c(list(obj = so_holder_variable), var_list), envir = .GlobalEnv)
       }
       
-      sleuth_obj_name <-
-        paste("so", metadata_model_names[metadata_model_number], sep = "_")
+      # Name and ssign the sleuth object to the global env
+      sleuth_obj_name <- paste("so", metadata_model_names[metadata_model_number], sep = "_")
       assign(sleuth_obj_name, so_holder_variable, envir = .GlobalEnv)
     }
   }
 }
 
-#' Retrieve the RSS value for a selected model name and formula based on the analysis_data data frame.
+#' Retrieve the RSS value per sample exclusion for a selected model name and formula based on the analysis_data data frame.
 #'
 #' @param data A data frame containing metadata file name, metadata tibble file, model names, and model formulae.
 #' @param num_core An integer for the number of cores to be used for sleuth_prep.
@@ -105,77 +67,58 @@ sleuth_interpret <- function(data, num_core = 1) {
 #' # a specific model name and an associated selected_formula found in the data frame, run sleuth_prep() and sleuth_fit()
 #' # and remove one sample in the metadata at a time and retrieve the sleuth object RSS value.
 #' RSS_val <- sleuth_sample_rss(analysis_data, num_core = 3, selected_model = "dropped_nominal", selected_formula = ~sex*Treatment)
-sleuth_sample_rss <-
-  function(data,
-           num_core = 1,
-           selected_model = NULL,
-           selected_formula = NULL) {
-    data_index <- match(selected_model, data$model_name)
+sleuth_sample_rss <- function(data, num_core = 1, selected_model = NULL, selected_formula = NULL) {
+  data_index <- match(selected_model, data$model_name)
     
-    metadata_file <- data.frame(data[data_index, 2])
-    metadata_model_names <-
-      unlist(strsplit(data$model_name[data_index], ","))
-    metadata_model_formula <-
-      unlist(strsplit(data$model_data[data_index], ","))
-    metadata_model_parameters <- data$model_parameters[data_index]
+  metadata_file <- data.frame(data[data_index, 2])
+  metadata_model_names <- unlist(strsplit(data$model_name[data_index], ","))
+  metadata_model_formula <- unlist(strsplit(data$model_data[data_index], ","))
+  metadata_model_parameters <- data$model_parameters[data_index]
     
-    rss_df <-
-      data.frame(
-        sample_removed_index = NA,
-        sample_removed = NA,
-        RSS = NA
-      )
+  rss_df <- data.frame(sample_removed_index = NA, sample_removed = NA, RSS = NA)
     
-    for (sample_index in 1:nrow(metadata_file)) {
-      sample_removed_metadata <- metadata_file[-sample_index, ]
-      cat("Removing sample - ", sample_index)
-      print("")
+  for (sample_index in 1:nrow(metadata_file)) {
+    sample_removed_metadata <- metadata_file[-sample_index,]
+    cat("Removing sample - ", sample_index)
+    print("")
       
-      if (metadata_model_parameters == '') {
-        var_list <- list(
-          sample_to_covariates = data.frame(sample_removed_metadata),
-          full_model = selected_formula,
-          num_cores = num_core
-        )
+    # Parse the user passed arguments for sleuth_fit()
+    if (metadata_model_parameters == '') {
+        var_list <- list(sample_to_covariates = data.frame(sample_removed_metadata), 
+                         full_model = selected_formula,
+                         num_cores = num_core)
       }
-      else {
-        var_list <-
-          list(
-            sample_to_covariates = data.frame(sample_removed_metadata),
-            full_model = selected_formula,
-            num_cores = num_core,
-            eval(parse(
-              text = paste0("list(", metadata_model_parameters, ")")
-            ))
-          )
+    else {
+        var_list <- list(sample_to_covariates = data.frame(sample_removed_metadata),
+                         full_model = selected_formula,
+                         num_cores = num_core,
+                         eval(parse(text = paste0("list(", metadata_model_parameters, ")"))))
+        
         var_holder <- unlist(var_list[4], recursive = FALSE)
         var_list <- c(var_list[1:3], var_holder)
       }
       
-      so_holder_variable <-
-        do.call(sleuth_prep, var_list, envir = .GlobalEnv)
+    # Run sleuth_prep
+    so_holder_variable <- do.call(sleuth_prep, var_list, envir = .GlobalEnv)
       
-      if (metadata_model_parameters == '') {
-        so_holder_variable <-
-          do.call(sleuth_fit, list(obj = so_holder_variable), envir = .GlobalEnv)
+    # Run sleuth_fit
+    if (metadata_model_parameters == '') {
+        so_holder_variable <- do.call(sleuth_fit, list(obj = so_holder_variable), envir = .GlobalEnv)
       }
-      else {
-        so_holder_variable <-
-          do.call(sleuth_fit, c(list(obj = so_holder_variable), var_list), envir = .GlobalEnv)
+    else {
+        so_holder_variable <- do.call(sleuth_fit, c(list(obj = so_holder_variable), var_list), envir = .GlobalEnv)
       }
       
-      temp_df <-
-        data.frame(
-          sample_removed_index = sample_index,
-          sample_removed = metadata_file$sample[sample_index],
-          RSS = sleuth_model_rss(so_holder_variable)
-        )
+    temp_df <- data.frame(sample_removed_index = sample_index,
+                          sample_removed = metadata_file$sample[sample_index],
+                          RSS = sleuth_model_rss(so_holder_variable))
       
-      rss_df <- rbind(rss_df, temp_df)
-    }
-    rss_df <- rss_df[-1, ]
-    return(rss_df)
+    rss_df <- rbind(rss_df, temp_df)
   }
+    
+  rss_df <- rss_df[-1,]
+  return(rss_df)
+}
 
 #' Automated function to run all possible Wald tests on a given Sleuth object and the fitted model.
 #'
@@ -184,8 +127,7 @@ sleuth_sample_rss <-
 #' @return Results of the Wald test assigned to the original Sleuth object input.
 #' @export
 #' @examples
-#' # Given a Sleuth object, run a wald test on all possible models as derived from the original formula used to run
-#' # sleuth_prep().
+#' # Given a Sleuth object, run a Wald test on all possible models as derived from the original formula used to run sleuth_fit().
 #' sleuth_test_wt(so)
 sleuth_test_wt <- function(sleuth_obj) {
   sleuth_obj_name <- deparse(substitute(sleuth_obj))
@@ -201,16 +143,14 @@ sleuth_test_wt <- function(sleuth_obj) {
   }
 }
 
-#' Automated function to run all possible Likewise Ratio tests on a given Sleuth object with models derived from the
-#' original formula used to run sleuth_fit().
+#' Automated function to run all possible Likewise Ratio tests on a given Sleuth object and the fitted model.
 #'
 #' @param sleuth_obj An existing Sleuth object as generated by sleuth_prep() and fit by sleuth_fit().
 #'
 #' @return Results of the Likewise Ratio test assigned to the original Sleuth object input.
 #' @export
 #' @examples
-#' # Given a Sleuth object, run a likelihood ratio test on all possible models derived from the original formula used to
-#' # run sleuth_prep().
+#' # Given a Sleuth object, run a likelihood ratio test on all possible models derived from the original formula used to run sleuth_fit().
 #' sleuth_test_lrt(so)
 sleuth_test_lrt <- function(sleuth_obj) {
   sleuth_obj_name <- deparse(substitute(sleuth_obj))
@@ -219,22 +159,18 @@ sleuth_test_lrt <- function(sleuth_obj) {
   formula_variables <- all.vars(formula_variables)
   
   for (model in formula_variables) {
-    remaining_variables <-
-      paste(formula_variables[-(match(model, formula_variables))], collapse = "_")
-    remaining_variables <-
-      paste("no", remaining_variables, sep = "_")
+    remaining_variables <- paste(formula_variables[-(match(model, formula_variables))], collapse = "_")
+    remaining_variables <- paste("no", remaining_variables, sep = "_")
     
     model <- paste("~", model, sep = "")
     
-    sleuth_obj <-
-      sleuth_fit(sleuth_obj, as.formula(model), fit_name = remaining_variables)
-    sleuth_obj <-
-      sleuth_lrt(sleuth_obj, remaining_variables, "full")
+    sleuth_obj <- sleuth_fit(sleuth_obj, as.formula(model), fit_name = remaining_variables)
+    sleuth_obj <- sleuth_lrt(sleuth_obj, remaining_variables, "full")
     assign(sleuth_obj_name, sleuth_obj, envir = .GlobalEnv)
   }
 }
 
-#' Retrieve all target ids for a given data frame with a FDR less than or equal to the selected cutoff (default is .05).
+#' Retrieve all target id's for a given data frame with a FDR less than or equal to the selected cutoff (default is .05).
 #'
 #' @param sleuth_res A data frame generated following running sleuth_results.
 #' @param q_cutoff The selected FDR cutoff value (default is .05).
@@ -245,16 +181,14 @@ sleuth_test_lrt <- function(sleuth_obj) {
 #' @examples
 #' # Given a Sleuth object, return a data frame of all target id's with an FDR less than the cutoff value.
 #' fdr_cutoff(wald_test_results)
-fdr_cutoff <-
-  function(sleuth_res,
-           q_cutoff = .05,
-           q_equal = FALSE) {
-    if (q_equal) {
-      sleuth_res[which(sleuth_res$qval <= q_cutoff),]
-    } else {
-      sleuth_res[which(sleuth_res$qval < q_cutoff),]
-    }
+fdr_cutoff <- function(sleuth_res, q_cutoff = .05, q_equal = FALSE) {
+  if (q_equal) {
+    sleuth_res[which(sleuth_res$qval <= q_cutoff), ]
+  } 
+  else {
+    sleuth_res[which(sleuth_res$qval < q_cutoff), ]
   }
+}
 
 #' Retrieve all results from a given Sleuth object following statistical testing.
 #'
@@ -273,133 +207,123 @@ fdr_cutoff <-
 #' # Given a Sleuth object and Boolean values of tests to run, perform the requested tests on all possible models for
 #' # the given Sleuth object.
 #' sleuth_object_result(so, q_max = .01, test = "lrt")
-sleuth_object_result <-
-  function(sleuth_obj,
-           all_data = FALSE,
-           sig_data = TRUE,
-           single_df = FALSE,
-           retrived_from_model = FALSE,
-           object_assignment = FALSE,
-           q_max = .05,
-           test = "wt") {
-    coeff <- colnames(sleuth_obj$design_matrix)
-    
-    if (object_assignment) {
-      sleuth_obj_name <- deparse(substitute(sleuth_obj))
-    }
-    else {
-      sleuth_obj_name <- deparse(substitute(sleuth_obj))
-      sleuth_obj_name <- unlist(strsplit(sleuth_obj_name, "_"))
-      sleuth_obj_name <-
-        paste(sleuth_obj_name[c(2:length(sleuth_obj_name))], collapse = "_")
-    }
-    
-    all_results_single_df <- list()
-    
-    if (test == "wt") {
-      for (model in coeff) {
-        if (model != "(Intercept)") {
-          wald_result <- sleuth_results(sleuth_obj, model, test_type = "wt")
-          
-          # If the model is an interaction term, remove the colon
-          model <- gsub(":", "_", model)
-          
-          wald_model_name <- paste("wald", sleuth_obj_name, sep = "_")
-          wald_model_name <- paste(wald_model_name, model, sep = "_")
-          
-          if (object_assignment) {
-            if (all_data) {
-              sleuth_obj$results$wt$all[[model]] <- wald_result
-            }
-            if (sig_data) {
-              sig_target_ids <- fdr_cutoff(wald_result, q_cutoff = q_max)
-              sig_model_name <-
-                paste("sig", wald_model_name, sep = "_")
-              
-              sleuth_obj$results$wt$sig[[model]] <- sig_target_ids
-            }
-          }
-          
-          else {
-            if (all_data) {
-              assign(wald_model_name, wald_result, envir = .GlobalEnv)
-            }
-            if (sig_data) {
-              sig_target_ids <- fdr_cutoff(wald_result, q_cutoff = q_max)
-              sig_model_name <-
-                paste("sig", wald_model_name, sep = "_")
-              assign(sig_model_name, sig_target_ids, envir = .GlobalEnv)
-            }
-          }
-          
-          if (single_df) {
-            if (retrived_from_model) {
-              wald_result$models <- model
-              all_results_single_df <-
-                rbind(all_results_single_df, wald_result)
-            }
-            else {
-              all_results_single_df <- rbind(all_results_single_df, wald_result)
-            }
-          }
-        }
-      }
-    }
-    
-    if (test == "lrt") {
-      for (model in names(sleuth_obj$tests[["lrt"]])) {
-        lrt_result <- sleuth_results(sleuth_obj, model, test_type = "lrt")
+sleuth_object_result <- function(sleuth_obj, all_data = FALSE, sig_data = TRUE, 
+                                 single_df = FALSE, retrived_from_model = FALSE, 
+                                 object_assignment = FALSE, q_max = .05, test = "wt") {
+  coeff <- colnames(sleuth_obj$design_matrix)
+  
+  if (object_assignment) {
+    sleuth_obj_name <- deparse(substitute(sleuth_obj))
+  }
+  else {
+    sleuth_obj_name <- deparse(substitute(sleuth_obj))
+    sleuth_obj_name <- unlist(strsplit(sleuth_obj_name, "_"))
+    sleuth_obj_name <- paste(sleuth_obj_name[c(2:length(sleuth_obj_name))], collapse = "_")
+  }
+  
+  all_results_single_df <- list()
+  
+  if (test == "wt") {
+    for (model in coeff) {
+      if (model != "(Intercept)") {
+        wald_result <- sleuth_results(sleuth_obj, model, test_type = "wt")
         
         # If the model is an interaction term, remove the colon
         model <- gsub(":", "_", model)
         
-        lrt_model_name <- paste("lrt", sleuth_obj_name, sep = "_")
-        lrt_model_name <- paste(lrt_model_name, model, sep = "_")
+        wald_model_name <- paste("wald", sleuth_obj_name, sep = "_")
+        wald_model_name <- paste(wald_model_name, model, sep = "_")
         
         if (object_assignment) {
           if (all_data) {
-            sleuth_obj$results$lrt$all[[model]] <- lrt_result
+            sleuth_obj$results$wt$all[[model]] <- wald_result
           }
           if (sig_data) {
-            sig_target_ids <- fdr_cutoff(lrt_result, q_cutoff = q_max)
-            sig_model_name <- paste("sig", lrt_model_name, sep = "_")
+            sig_target_ids <- fdr_cutoff(wald_result, q_cutoff = q_max)
+            sig_model_name <- paste("sig", wald_model_name, sep = "_")
             
-            sleuth_obj$results$lrt$sig[[model]] <- sig_target_ids
+            sleuth_obj$results$wt$sig[[model]] <- sig_target_ids
           }
         }
         
         else {
           if (all_data) {
-            assign(lrt_model_name, lrt_result, envir = .GlobalEnv)
+            assign(wald_model_name, wald_result, envir = .GlobalEnv)
           }
           if (sig_data) {
-            sig_target_ids <- fdr_cutoff(lrt_result, q_cutoff = q_max)
-            sig_model_name <- paste("sig", lrt_model_name, sep = "_")
+            sig_target_ids <- fdr_cutoff(wald_result, q_cutoff = q_max)
+            sig_model_name <- paste("sig", wald_model_name, sep = "_")
             assign(sig_model_name, sig_target_ids, envir = .GlobalEnv)
           }
         }
         
         if (single_df) {
           if (retrived_from_model) {
-            lrt_result$models <- model
-            all_results_single_df <-
-              rbind(all_results_single_df, lrt_result)
+            wald_result$models <- model
+            all_results_single_df <- rbind(all_results_single_df, wald_result)
           }
           else {
-            all_results_single_df <- rbind(all_results_single_df, lrt_result)
+            all_results_single_df <- rbind(all_results_single_df, wald_result)
           }
         }
       }
     }
-    
-    if (single_df) {
-      return(all_results_single_df)
-    }
-    
-    if (object_assignment) {
-      assign(sleuth_obj_name, sleuth_obj, envir = .GlobalEnv)
+  }
+  
+  if (test == "lrt") {
+    for (model in names(sleuth_obj$tests[["lrt"]])) {
+      lrt_result <- sleuth_results(sleuth_obj, model, test_type = "lrt")
+      
+      # If the model is an interaction term, remove the colon
+      model <- gsub(":", "_", model)
+      
+      lrt_model_name <- paste("lrt", sleuth_obj_name, sep = "_")
+      lrt_model_name <- paste(lrt_model_name, model, sep = "_")
+      
+      if (object_assignment) {
+        if (all_data) {
+          sleuth_obj$results$lrt$all[[model]] <- lrt_result
+        }
+        if (sig_data) {
+          sig_target_ids <- fdr_cutoff(lrt_result, q_cutoff = q_max)
+          sig_model_name <- paste("sig", lrt_model_name, sep = "_")
+          
+          sleuth_obj$results$lrt$sig[[model]] <- sig_target_ids
+        }
+      }
+      
+      else {
+        if (all_data) {
+          assign(lrt_model_name, lrt_result, envir = .GlobalEnv)
+        }
+        if (sig_data) {
+          sig_target_ids <- fdr_cutoff(lrt_result, q_cutoff = q_max)
+          sig_model_name <-
+            paste("sig", lrt_model_name, sep = "_")
+          assign(sig_model_name, sig_target_ids, envir = .GlobalEnv)
+        }
+      }
+      
+      if (single_df) {
+        if (retrived_from_model) {
+          lrt_result$models <- model
+          all_results_single_df <- rbind(all_results_single_df, lrt_result)
+        }
+        else {
+          all_results_single_df <- rbind(all_results_single_df, lrt_result)
+        }
+      }
     }
   }
+  
+  if (single_df) {
+    return(all_results_single_df)
+  }
+  
+  if (object_assignment) {
+    assign(sleuth_obj_name, sleuth_obj, envir = .GlobalEnv)
+  }
+}
 
 #' Convert a given list of ensemble transcript id's into ensembl_transcript_id's, external_gene_name's, ensembl_gene_id's, and the original transcript.id.
 #'
@@ -413,69 +337,56 @@ sleuth_object_result <-
 #' ensemble_to_id(wald_sig_results)
 ensembl_to_id <- function(sig_results, entire_gene_name = TRUE) {
   if (!exists("mart")) {
-    cat(
-      "Function requires a BioMart database and dataset. Refer to the gumshoe wiki on details to install biomaRt.\n"
-    )
+    cat("Function requires a BioMart database and dataset. Refer to the gumshoe wiki on details to install biomaRt.\n")
     cat("\n")
-    cat(
-      "If biomaRt is installed, run the following command to create the required `mart` object for mice:\n"
-    )
+    cat("If biomaRt is installed, run the following command to create the required `mart` object for mice:\n")
     cat("\n")
     cat('mart <- useMart("ensembl", dataset = "mmusculus_gene_ensembl")\n')
     cat("\n")
-    cat(
-      "If a mart object has already been assigned, please confirm that the object is named `mart`"
-    )
-  } else {
-    ensembl_convert <- getBM(
-      attributes = c(
-        "ensembl_transcript_id_version",
-        "external_gene_name",
-        "description"
-      ),
-      filters = "ensembl_transcript_id_version",
-      values = sig_results$target_id,
-      mart = mart
-    )
+    cat("If a mart object has already been assigned, please confirm that the object is named `mart`")
+  } 
+  else {
+    ensembl_convert <- getBM(attributes = c("ensembl_transcript_id_version", 
+                                            "external_gene_name", "description"), 
+                             filters = "ensembl_transcript_id_version", 
+                             values = sig_results$target_id, mart = mart)
     
-    sig_results <-
-      merge(sig_results,
-            ensembl_convert,
-            by.x = "target_id",
-            by.y = "ensembl_transcript_id_version")
+    sig_results <- merge(sig_results, ensembl_convert, by.x = "target_id", 
+                         by.y = "ensembl_transcript_id_version")
     
-    sig_results <-
-      sig_results[, c(length(sig_results) - 1,
-                      1:(length(sig_results) - 2),
-                      length(sig_results))]
+    sig_results <- sig_results[, c(length(sig_results) - 1, 
+                                   1:(length(sig_results) - 2), 
+                                   length(sig_results))]
     
     if (entire_gene_name) {
       sig_results <- sig_results[]
-    } else {
+    } 
+    else {
       sig_results <- sig_results[, c(1:12)]
     }
     assign("annotated_sig_results", sig_results, envir = .GlobalEnv)
   }
 }
 
-#' Provides the merged results of two sleuth objects, one ran with gene aggregation and the second with p-value aggregation. Provides a fold-change (b) with the lancaster method.
+#' Provides the merged results of two sleuth objects, one ran with gene aggregation and the second with p-value aggregation. Provides a fold-change (b) with the Lancaster method.
 #'
 #' @param sleuth_obj_1 A sleuth object ran with either gene or p-value aggregation.
 #' @param sleuth_obj_2 A sleuth object ran with either gene or p-value aggregation.
 #' @param q_max The FDR cutoff value that is passed to the fdr_cutoff function embedded within sleuth_object_result for sig_data. Defaults to NULL, which prevents it from running.
 #'
-#' @return A data frame containing the combined information from the two sleuth objects. 
+#' @return A data frame containing the combined information from the two sleuth objects.
 #' @export
 #' @examples
 #' sleuth_lancaster_fc_merge(so_gene, so_pVal, q_max = .05)
-sleuth_lancaster_fc_merge <- function(sleuth_obj_1, sleuth_obj_2, q_max = NULL){
-  # Confirm and check that sleuth_obj_1 and sleuth_obj_2 
-  if (sleuth_obj_1$gene_mode && sleuth_obj_2$pval_aggregate | sleuth_obj_1$pval_aggregate && sleuth_obj_2$gene_mode){
-    if (sleuth_obj_1$gene_mode){
+sleuth_lancaster_fc_merge <- function(sleuth_obj_1, sleuth_obj_2, q_max = NULL) {
+  # Confirm and check that sleuth_obj_1 and sleuth_obj_2
+  if (sleuth_obj_1$gene_mode && sleuth_obj_2$pval_aggregate |
+      sleuth_obj_1$pval_aggregate && sleuth_obj_2$gene_mode) {
+    if (sleuth_obj_1$gene_mode) {
       so_gene <- sleuth_obj_1
       so_pVal <- sleuth_obj_2
     }
-    else if (sleuth_obj_2$gene_mode){
+    else if (sleuth_obj_2$gene_mode) {
       so_gene <- sleuth_obj_2
       so_pVal <- sleuth_obj_1
     }
@@ -484,17 +395,20 @@ sleuth_lancaster_fc_merge <- function(sleuth_obj_1, sleuth_obj_2, q_max = NULL){
     return("Confirm that of the two passed sleuth objects, one was run with gene mode and the other with p-value aggregation.")
   }
   
-  all_gene <- sleuth_object_result(so_gene, all_data = TRUE, single_df = TRUE, retrived_from_model = TRUE)
-  all_pVal <- sleuth_object_result(so_pVal, all_data  = TRUE, single_df = TRUE, retrived_from_model = TRUE)
+  all_gene <- sleuth_object_result(so_gene, all_data = TRUE, single_df = TRUE, 
+                                   retrived_from_model = TRUE)
+  all_pVal <- sleuth_object_result(so_pVal, all_data  = TRUE, single_df = TRUE, 
+                                   retrived_from_model = TRUE)
   
   merged_result_df <- merge(all_pVal, all_gene, by = c('ens_gene', 'target_id', 'models'))
   colnames(merged_result_df)[7] <- c("q_qval")
   
-  if (!is.null(q_max)){
+  if (!is.null(q_max)) {
     merged_result_df <- fdr_cutoff(merged_result_df, q_cutoff = q_max)
   }
   
-  colnames(merged_result_df)[6:9] <- c("lm_pval", "lm_qval", "gene_agg_pval", "gene_agg_qval")
+  colnames(merged_result_df)[6:9] <- c("lm_pval", "lm_qval", "gene_agg_pval", 
+                                       "gene_agg_qval")
   
   return(merged_result_df)
 }

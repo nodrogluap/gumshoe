@@ -1,47 +1,35 @@
-# Plotting functions for Gumshoe
-
-# Functions ----
+# Figure out what this is
 by_plot <- function(sleuth_obj, units = 'est_counts') {
-  est_count_matrix <-
-    sleuth:::spread_abundance_by(sleuth_obj$obs_norm_filt,
-                                 units,
-                                 sleuth_obj$sample_to_covariates$sample)
+  est_count_matrix <- sleuth:::spread_abundance_by(sleuth_obj$obs_norm_filt, units, sleuth_obj$sample_to_covariates$sample)
   pca <- prcomp(t(est_count_matrix))
-  plot_vector_length <-
-    sqrt((pca$rotation[, 1] ^ 2) + (pca$rotation[, 2] ^ 2))
+  plot_vector_length <- sqrt((pca$rotation[, 1] ^ 2) + (pca$rotation[, 2] ^ 2))
   
   # Highlight the ten longest
   keep <- names(tail(sort(plot_vector_length), 10))
   n <- rownames(pca$rotation)
   pca$rotation[!(rownames(pca$rotation) %in% keep), ] <- c(0)
+  
   # Add gene name to the loadings viz of available
   if (!is.null(sleuth_obj$target_mapping)) {
     t2g <- sleuth_obj$target_mapping
     rownames(t2g) <- t2g$target_id
     rownames(pca$rotation) <- lapply(n, function(x) {
-      ifelse(x %in% keep, paste0(x, "-", t2g[x, 2]), ".")
-    })
+      ifelse(x %in% keep, paste0(x, "-", t2g[x, 2]), ".")})
   }
-  autoplot(
-    pca,
-    data = t(est_count_matrix),
-    label = TRUE,
-    shape = FALSE,
-    loadings = TRUE,
-    loadings.label = TRUE,
-    loadings.label.size = 3,
-    loadings.label.vjust = 1.7
-  )
+  autoplot(pca, data = t(est_count_matrix), label = TRUE, shape = FALSE, 
+           loadings = TRUE, loadings.label = TRUE, loadings.label.size = 3, 
+           loadings.label.vjust = 1.7)
 }
 
 #' Generate a volcano plot from a data frame containing a gene name, q-value, and fold change with user-selected cutoffs
 #' and title.
 #'
 #' @param df A data frame or list containing ensemble transcript id's.
+#' @param labels A boolean if the data points labels should be ploted.
 #' @param label_column_name The column name of the data point labels. The default is external_gene_name, which is the column name from the output of the ensembl_to_id function.
 #' @param x_axis_column_name The column name for the intended x-axis values. The default is "b", which is the name of the column corresponding to the FC after Sleuth analysis.
 #' @param y_axis_column_name The column name for the intended y-axis values. The default is "qval", which is the name of the column corresponding to the Benjamini-Hochberg multiple testing corrected p-value after Sleuth analysis.
-#' @param x_cutoff X-axis cutoff, which corresponds to the fold change. Default value is 2.
+#' @param x_cutoff X-axis cutoff, which corresponds to the fold change. Default value is 1.
 #' @param y_cutoff Y-axis cutoff, which corresponds to the q-value. Default value is -log10(.05).
 #' @param graph_name Name of the graph. Default is "Sample Graph Name".
 #'
@@ -49,145 +37,68 @@ by_plot <- function(sleuth_obj, units = 'est_counts') {
 #' @examples
 #' # Create a volcano plot from a data frame with gene symbols, q-value, and FC.
 #' volc_plot(wald_sig_results, graph_name = "Treated v. WT - Sex Factor")
-volc_plot <-
-  function(df,
-           labels = FALSE,
-           label_column_name = "external_gene_name",
-           x_axis_column_name = "b",
-           y_axis_column_name = "qval",
-           x_cutoff = 2,
-           y_cutoff = -log10(.05),
-           graph_name = "Sample Graph Name") {
-    if (!"ggrepel" %in% (.packages())) {
-      cat(
-        "Function requires the ggrepel package. If the package is not installed, refer to the gumshoe wiki, otherwise, run the following command to load the package:\n"
-      )
+volc_plot <- function(df, labels = FALSE, label_column_name = "external_gene_name", 
+                      x_axis_column_name = "b", y_axis_column_name = "qval", x_cutoff = 1,
+                      y_cutoff = -log10(.05), graph_name = "Sample Graph Name") {
+  if (!"ggrepel" %in% (.packages())) {
+      cat("Function requires the ggrepel package. If the package is not installed, refer to the gumshoe wiki, otherwise, run the following command to load the package:\n")
       cat("\n")
       cat('library("ggrepel")')
     }
-    else {
-      if (labels) {
-        df <-
-          df[, c(label_column_name,
-                 y_axis_column_name,
-                 x_axis_column_name)]
-        colnames(df) <- c("gene_symbol", "Y_axis", "log2FC")
-        
-        df$Y_axis <- -log10(df$Y_axis)
-        
-        # Set colours and labels
-        df$diff_expressed <- "Not sig."
-        df$diff_expressed[df$log2FC > x_cutoff &
-                            df$Y_axis > y_cutoff] <- "Up-regulated"
-        df$diff_expressed[df$log2FC < -x_cutoff &
-                            df$Y_axis > y_cutoff] <- "Down-regulated"
-        
-        df$label <- NA
-        df$label[df$diff_expressed != "Not sig."] <-
-          df$gene_symbol[df$diff_expressed != "Not sig."]
-        
-        if (any("Not sig." %in% df$diff_expressed)) {
-          ggplot(df,
-                 aes(
-                   x = log2FC,
-                   y = Y_axis,
-                   col = diff_expressed,
-                   label = label
-                 )) +
-            geom_point(alpha = 0.5) +
-            theme_minimal() +
-            geom_text_repel(show.legend = FALSE,
-                            min.segment.length = 0.5) +
-            scale_color_manual(name = "Expression",
-                               values = c("blue", "black", "red")) +
-            geom_vline(
-              xintercept = c(-x_cutoff, x_cutoff),
-              col = "black",
-              linetype = "dashed"
-            ) +
-            geom_hline(yintercept = y_cutoff,
-                       col = "black",
-                       linetype = "dashed") +
-            labs(title = graph_name) +
-            xlab(expression(Log[2] ~ (Fold ~ Change))) +
-            ylab(expression(-Log[10] ~ (Adj. ~ p - Value)))
-        } else {
-          ggplot(df,
-                 aes(
-                   x = log2FC,
-                   y = Y_axis,
-                   col = diff_expressed,
-                   label = label
-                 )) +
-            geom_point(alpha = 0.5) +
-            theme_minimal() +
-            geom_text_repel(show.legend = FALSE,
-                            min.segment.length = 0.5) +
-            scale_color_manual(name = "Expression", values = c("blue", "red")) +
-            geom_vline(
-              xintercept = c(-x_cutoff, x_cutoff),
-              col = "black",
-              linetype = "dashed"
-            ) +
-            geom_hline(yintercept = y_cutoff,
-                       col = "black",
-                       linetype = "dashed") +
-            labs(title = graph_name) +
-            xlab(expression(Log[2] ~ FC)) +
-            ylab(expression(-Log[10] ~ (Adj. ~ p - Value)))
-        }
-      }
-      else {
-        df <- df[, c(y_axis_column_name, x_axis_column_name)]
-        colnames(df) <- c("Y_axis", "log2FC")
-        
-        df$Y_axis <- -log10(df$Y_axis)
-        
-        # Set colours and labels
-        df$diff_expressed <- "Not sig."
-        df$diff_expressed[df$log2FC > x_cutoff &
-                            df$Y_axis > y_cutoff] <- "Up-regulated"
-        df$diff_expressed[df$log2FC < -x_cutoff &
-                            df$Y_axis > y_cutoff] <- "Down-regulated"
-        
-        if (any("Not sig." %in% df$diff_expressed)) {
-          ggplot(df, aes(x = log2FC, y = Y_axis, col = diff_expressed)) +
-            geom_point(alpha = 0.5) +
-            theme_minimal() +
-            scale_color_manual(name = "Expression",
-                               values = c("blue", "black", "red")) +
-            geom_vline(
-              xintercept = c(-x_cutoff, x_cutoff),
-              col = "black",
-              linetype = "dashed"
-            ) +
-            geom_hline(yintercept = y_cutoff,
-                       col = "black",
-                       linetype = "dashed") +
-            labs(title = graph_name) +
-            xlab(expression(Log[2] ~ (Fold ~ Change))) +
-            ylab(expression(-Log[10] ~ (Adj. ~ p - Value)))
-        }
-        else {
-          ggplot(df, aes(x = log2FC, y = Y_axis, col = diff_expressed)) +
-            geom_point(alpha = 0.5) +
-            theme_minimal() +
-            scale_color_manual(name = "Expression", values = c("blue", "red")) +
-            geom_vline(
-              xintercept = c(-x_cutoff, x_cutoff),
-              col = "black",
-              linetype = "dashed"
-            ) +
-            geom_hline(yintercept = y_cutoff,
-                       col = "black",
-                       linetype = "dashed") +
-            labs(title = graph_name) +
-            xlab(expression(Log[2] ~ FC)) +
-            ylab(expression(-Log[10] ~ (Adj. ~ p - Value)))
-        }
-      }
+    
+  else {
+    # If the user wants to plot point labels
+    if (labels) {
+      df <- df[, c(label_column_name, y_axis_column_name, x_axis_column_name)]
+      colnames(df) <- c("gene_symbol", "Y_axis", "log2FC")
+      
+      df$Y_axis <- -log10(df$Y_axis)
+      
+      # Set colours and labels
+      df$diff_expressed <- "Not sig."
+      df$diff_expressed[df$log2FC > x_cutoff & df$Y_axis > y_cutoff] <- "Up-regulated"
+      df$diff_expressed[df$log2FC < -x_cutoff & df$Y_axis > y_cutoff] <- "Down-regulated"
+      
+      df$label <- NA
+      df$label[df$diff_expressed != "Not sig."] <- df$gene_symbol[df$diff_expressed != "Not sig."]
+
+      volc_plot <- ggplot(df, aes(x = log2FC, y = Y_axis, col = diff_expressed, label = label)) + 
+        geom_text_repel(show.legend = FALSE, min.segment.length = 0.5)
     }
+    else {
+      df <- df[, c(y_axis_column_name, x_axis_column_name)]
+      colnames(df) <- c("Y_axis", "log2FC")
+      
+      df$Y_axis <- -log10(df$Y_axis)
+      
+      # Set colours and labels
+      df$diff_expressed <- "Not sig."
+      df$diff_expressed[df$log2FC > x_cutoff & df$Y_axis > y_cutoff] <- "Up-regulated"
+      df$diff_expressed[df$log2FC < -x_cutoff & df$Y_axis > y_cutoff] <- "Down-regulated"
+
+      volc_plot <- ggplot(df, aes(x = log2FC, y = Y_axis, col = diff_expressed))
+    }
+    
+    # Change the colour scale is there are or not any non-sig values.
+    if (any("Not sig." %in% df$diff_expressed)) {
+      volc_plot <- volc_plot + scale_color_manual(name = "Expression", values = c("blue", "black", "red"))
+    }
+    else {
+      volc_plot <- volc_plot + scale_color_manual(name = "Expression", values = c("blue", "red"))
+    }
+    
+    volc_plot <- volc_plot +
+      geom_point(alpha = 0.5) + 
+      theme_minimal() +
+      geom_vline(xintercept = c(-x_cutoff, x_cutoff), col = "black", linetype = "dashed") +
+      geom_hline(yintercept = y_cutoff, col = "black", linetype = "dashed") +
+      labs(title = graph_name) +
+      xlab(expression(Log[2] ~ (Fold ~ Change))) +
+      ylab(expression(-Log[10] ~ (Adj. ~ p - Value)))
+    
+    volc_plot
   }
+}
 
 #' Spread abundance by a column. Take a data.frame from a sleuth object
 #' (e.g. \code{obs_raw}) and cast it into a matrix where the rows are the
@@ -231,88 +142,77 @@ spread_abundance_by <- function(abund, var, which_order) {
 #' @examples
 #' # Create a PCA plot from a sleuth object.
 #' self_plot_pca(so, colour_by = "tissue", graph_name = "All Samples")
-self_plot_pca <-
-  function(obj,
-           pc_x = 1L,
-           pc_y = 2L,
-           units = "est_counts",
-           color_by = NULL,
-           show_legend = TRUE,
-           graph_name = "Sample Plot Name",
-           auto_save = FALSE,
-           scaled = TRUE) {
-    if (!is.null(color_by)) {
-      color_by <- sym(color_by)
-    }
-    
-    mat <- spread_abundance_by(obj$obs_norm_filt, units,
-                               obj$sample_to_covariates$sample)
-    
-    pca_res <- prcomp(t(mat))
-    df <- as.data.frame(pca_res$x[, c(pc_x, pc_y)])
-    df$sample <- rownames(df)
-    rownames(df) <- NULL
-    
-    ppv <- plot_pc_variance(obj)
-    PCpc <- ppv$data$var
-    pc_1 <- paste0("PC1 ", "(", round(PCpc[1], 2), "%)")
-    pc_2 <- paste0("PC2 ", "(", round(PCpc[2], 2), "%)")
-    
-    df <- dplyr::left_join(df, obj$sample_to_covariates,
-                           by = "sample")
-    print(df)
-    
-    if (show_legend) {
-      plt <-
-        ggplot(df, aes(PC1, PC2, colour = !!color_by, label = sample)) +
-        theme_bw() +
-        geom_point(alpha = 0.5) +
-        geom_text_repel(show.legend = FALSE) +
-        scale_color_manual(name = color_by,
-                           values = c("black", "blue", "red", "green")) +
-        labs(title = graph_name) +
-        xlab(pc_1) +
-        ylab(pc_2)
-    }
-    else {
-      plt <-
-        ggplot(df, aes(PC1, PC2, colour = !!color_by, label = sample)) +
-        theme_bw() +
-        geom_point(alpha = 0.5) +
-        theme(legend.position = "none") +
-        geom_text_repel(show.legend = FALSE) +
-        scale_color_manual(name = color_by,
-                           values = c("black", "blue", "red", "green")) +
-        labs(title = graph_name) +
-        xlab(pc_1) +
-        ylab(pc_2)
-    }
-    
-    if (auto_save) {
-      if (scaled) {
-        ggsave(
-          "figure1.png",
-          dpi = 300,
-          dev = "png",
-          height = PCpc[2] / 5,
-          width = PCpc[1] / 5,
-          units = "in"
-        )
-      } else {
-        ggsave(
-          "figure1.png",
-          dpi = 300,
-          dev = "png",
-          height = 4.5,
-          width = 6,
-          units = "in"
-        )
-      }
-    }
-    else {
-      plt
+self_plot_pca <-function(obj, pc_x = 1L, pc_y = 2L, units = "est_counts", 
+                         color_by = NULL, show_legend = TRUE, 
+                         graph_name = "Sample Plot Name", auto_save = FALSE,
+                         scaled = TRUE) {
+  if (!is.null(color_by)) {
+    color_by <- sym(color_by)
+  }
+  
+  mat <- spread_abundance_by(obj$obs_norm_filt, units,
+                             obj$sample_to_covariates$sample)
+  
+  pca_res <- prcomp(t(mat))
+  df <- as.data.frame(pca_res$x[, c(pc_x, pc_y)])
+  df$sample <- rownames(df)
+  rownames(df) <- NULL
+  
+  ppv <- plot_pc_variance(obj)
+  PCpc <- ppv$data$var
+  pc_1 <- paste0("PC1 ", "(", round(PCpc[1], 2), "%)")
+  pc_2 <- paste0("PC2 ", "(", round(PCpc[2], 2), "%)")
+  
+  df <- dplyr::left_join(df, obj$sample_to_covariates, by = "sample")
+  print(df)
+  
+  if (show_legend) {
+    plt <- ggplot(df, aes(PC1, PC2, colour = !!color_by, label = sample)) +
+      theme_bw() +
+      geom_point(alpha = 0.5) +
+      geom_text_repel(show.legend = FALSE) +
+      scale_color_manual(name = color_by, values = c("black", "blue", "red", "green")) +
+      labs(title = graph_name) +
+      xlab(pc_1) +
+      ylab(pc_2)
+  }
+  else {
+    plt <- ggplot(df, aes(PC1, PC2, colour = !!color_by, label = sample)) +
+      theme_bw() +
+      geom_point(alpha = 0.5) +
+      theme(legend.position = "none") +
+      geom_text_repel(show.legend = FALSE) +
+      scale_color_manual(name = color_by, values = c("black", "blue", "red", "green")) +
+      labs(title = graph_name) +
+      xlab(pc_1) +
+      ylab(pc_2)
+  }
+  
+  if (auto_save) {
+    if (scaled) {
+      ggsave(
+        "figure1.png",
+        dpi = 300,
+        dev = "png",
+        height = PCpc[2] / 5,
+        width = PCpc[1] / 5,
+        units = "in"
+      )
+    } else {
+      ggsave(
+        "figure1.png",
+        dpi = 300,
+        dev = "png",
+        height = 4.5,
+        width = 6,
+        units = "in"
+      )
     }
   }
+  else {
+    plt
+  }
+}
 
 #' Generate a box plot from kruskal-wallis results with user-selected title.
 #'
@@ -323,20 +223,18 @@ self_plot_pca <-
 #' @examples
 #' # Create a box plot from a kruskal-wallis result retrived using sleuth_kruskal_wallis().
 #' isoform_boxplot(kw_result, graph_name = "All Isoforms")
-isoform_boxplot <-
-  function(kruskal_result, graph_name = "Sample Plot Name") {
-    ggplot(kruskal_result,
-           aes(x = target_id, y = est_counts, col = target_id)) +
-      theme_minimal() +
-      geom_boxplot() +
-      guides(color = "none") +
-      geom_jitter() +
-      scale_fill_brewer(palette = "Dark2") +
-      ylab("Estimated Counts") +
-      xlab("Target ID") +
-      labs(title = graph_name) +
-      rotate_x_text(90)
-  }
+isoform_boxplot <- function(kruskal_result, graph_name = "Sample Plot Name") {
+  ggplot(kruskal_result, aes(x = target_id, y = est_counts, col = target_id)) +
+    theme_minimal() +
+    geom_boxplot() +
+    guides(color = "none") +
+    geom_jitter() +
+    scale_fill_brewer(palette = "Dark2") +
+    ylab("Estimated Counts") +
+    xlab("Target ID") +
+    labs(title = graph_name) +
+    rotate_x_text(90)
+}
 
 #' Generate a isoform level heat map. Can only show a maximum of three genes at the same time.
 #'
@@ -356,35 +254,20 @@ isoform_boxplot <-
 #' @examples
 #' # Create a isoform heat map from a sleuth_object.
 #' heatmap_plot(so, genes = c("Tp53", "Tnf", "Egfr", "Egr1"), q_max = .01, test = "lrt", grouping_colours = list(sex = c("F" = "thistle1", "M" = "turquoise1"), treatment = c("drug_A" = "indianred1", "drug_B" = "olivedrab1")), boxplot = FALSE)
-heatmap_plot <-
-  function(sleuth_obj,
-           genes,
-           q_max = .05,
-           test = "wt",
-           iqf = 0,
-           sig_marker_values = c(.05, .01, .001),
-           sig_markers = c("*", "**", "***"),
-           grouping_colours = list(),
-           plot_title = "Sleuth Heatmap",
-           boxplot = TRUE,
-           clusterRows = FALSE,
-           clusterColumn = FALSE) {
+heatmap_plot <- function(sleuth_obj, genes, q_max = .05, test = "wt", iqf = 0,
+           sig_marker_values = c(.05, .01, .001), sig_markers = c("*", "**", "***"),
+           grouping_colours = list(), plot_title = "Sleuth Heatmap", boxplot = TRUE,
+           clusterRows = FALSE, clusterColumn = FALSE) {
     # Retrieve the scaled transcript counts for the set of genes passed to the function
-    scaled_transcript_counts <-
-      filtered_scaled_transcript_counts(sleuth_obj = sleuth_obj, genes = genes)
+    scaled_transcript_counts <- filtered_scaled_transcript_counts(sleuth_obj = sleuth_obj, genes = genes)
     
     # Take the scaled_transcript_counts and
     if (sleuth_obj$gene_mode == TRUE) {
-      scaled_transcript_counts <-
-        aggregate(est_counts ~ ext_gene + sample,
-                  scaled_transcript_counts,
-                  mean)
+      scaled_transcript_counts <- aggregate(est_counts ~ ext_gene + sample, scaled_transcript_counts, mean)
       
       # Dcast the scaled_transcript_counts to make the columns the sample names, rows the transcript ids, and the cells the est_count values
-      scaled_transcript_counts <-
-        dcast(scaled_transcript_counts, ext_gene ~ sample, value.var = "est_counts")
-      rownames(scaled_transcript_counts) <-
-        scaled_transcript_counts$ext_gene
+      scaled_transcript_counts <- dcast(scaled_transcript_counts, ext_gene ~ sample, value.var = "est_counts")
+      rownames(scaled_transcript_counts) <- scaled_transcript_counts$ext_gene
     }
     else {
       # Merge the ext_gene name with the transcripts.
@@ -783,208 +666,3 @@ heatmap_plot <-
       )
     }
   }
-
-#' Generate a multidimensional PCA plot with independent loading plots.
-#'
-#' @param object An existing Seurat object in a SingleCellExperiment format.
-#' @param ggPlotList The output graph generated by plotReducedDim.
-#' @param nloadings A numeric value for the number of loadings to showcase on single loading plot.
-#' @param loadingScaleFactor A numeric value to scale the loading vectors by.
-#'
-#' @export
-#' @examples
-#' # Create a multidimensional PCA plot with independent loading plots
-#' plotFromReducedDim(seu_SCE, reducedDimPlot, nloadings = 10, loadingScaleFactor = 100)
-plotFromReduedDim <- function(object = NULL, ggPlotList = NULL,
-                              nloadings = 5, loadingScaleFactor = 150){
-  plot_out <- ggPlotList
-  plotD1 <- ggPlotList$data
-  pcaComponents <- levels(temp$data$xvar)
-  pcaNumComponents <- length(pcaComponents)
-  
-  # Modify the data for the scatter plot and remove the top right
-  for (xvar in pcaComponents){
-    for (yvar in pcaComponents[-1]){
-      # Check that the diagonal values are not being removed
-      if (xvar != yvar){
-        # Check that only the upper right side is being removed
-        if (strsplit(xvar, " ")[[1]][2] < strsplit(yvar, " ")[[1]][2]){
-          plotD1 <- plotD1[!(plotD1$xvar == xvar & plotD1$yvar == yvar),]
-        }
-      }
-    }
-  }
-  
-  if (length(plot_out$layers) <= 1){
-    return("The graph provided is 2-dimensional. Cannot showcase multidimensional loading plot.")
-  }
-  
-  plot_out$layers[[2]]$data <- plotD1
-  
-  # Calculate the PCA values for the plot
-  SCE_PCA_Vals <- calculatePCA(object, ncomponents = pcaNumComponents, scale = TRUE)
-  SCE_PCA_Vals <- attributes(SCE_PCA_Vals)
-  SCE_PCA_rotations <- SCE_PCA_Vals$rotation
-  
-  # Calculate the vector magnitude for each PC combination to plot
-  df_list <- lapply(1:(ncol(combn(1:ncol(SCE_PCA_rotations), m = 2))), 
-                    function(y) SCE_PCA_rotations[, combn(1:ncol(SCE_PCA_rotations), m = 2)[,y]])
-  
-  SCE_PCA_rotiation_vector_length_df <- data.frame(xvar = NA, yvar = NA, xend = 0, yend = 0, total = 0)
-  for (sub_df in df_list){
-    temp_df <- data.frame(xvar = colnames(sub_df)[1], yvar = colnames(sub_df)[2], 
-                          xend = sub_df[, 1], yend = sub_df[, 2],
-                          total = (sub_df[, 1] ^ 2) + (sub_df[, 2] ^ 2))
-    temp_df <- temp_df[order(temp_df$total, decreasing = TRUE),]
-    temp_df <- temp_df[1:nloadings,]
-    
-    SCE_PCA_rotiation_vector_length_df <- rbind(SCE_PCA_rotiation_vector_length_df, temp_df)
-  }
-  SCE_PCA_rotiation_vector_length_df <- SCE_PCA_rotiation_vector_length_df[-1,]
-  SCE_PCA_rotiation_vector_length_df$rownames <- rownames(SCE_PCA_rotiation_vector_length_df)
-  
-  # Switch the PC notation to PCA
-  for (pcaComp in unique(c(SCE_PCA_rotiation_vector_length_df$yvar, SCE_PCA_rotiation_vector_length_df$xvar))){
-    pc_to_pca <- gsub("C", "CA ", pcaComp)
-    SCE_PCA_rotiation_vector_length_df$xvar[SCE_PCA_rotiation_vector_length_df$xvar == pcaComp] <- pc_to_pca
-    SCE_PCA_rotiation_vector_length_df$yvar[SCE_PCA_rotiation_vector_length_df$yvar == pcaComp] <- pc_to_pca
-  }
-  
-  assign("rotations", SCE_PCA_rotiation_vector_length_df, envir = .GlobalEnv)
-  
-  # Scale the loadings by a user provided value
-  SCE_PCA_rotiation_vector_length_df$xend <- (SCE_PCA_rotiation_vector_length_df$xend * loadingScaleFactor)
-  SCE_PCA_rotiation_vector_length_df$yend <- (SCE_PCA_rotiation_vector_length_df$yend * loadingScaleFactor)
-  
-  # Plot the graph
-  plot_out <- plot_out + geom_segment(data=SCE_PCA_rotiation_vector_length_df, 
-                                      aes(x=0,y=0,xend=xend,yend=yend),
-                                      inherit.aes=FALSE) + 
-    geom_text_repel(data = SCE_PCA_rotiation_vector_length_df, 
-                    aes(x=xend,y=yend, label = rownames), 
-                    inherit.aes = FALSE, segment.color = "transparent", 
-                    size = 2, force = 2)
-  
-  plot_out
-}
-
-#' Generate n number of piecharts, where n factors levels of the seurat clusters or a unique metadata feature
-#'
-#' @param object An existing Seurat object.
-#' @param meta_feature The metadata feature that is either highlighted when plotting clusters, or  pie charts are split by when highlight clusters.
-#' @param plot_by Character string of either 'clusters' or 'others', denoting what to split pie charts by.
-#' @param facet Boolean value to denote if the plot should have facet_wrap applied.
-#' @param include_labels Boolean value to denote if the plot should have labels for each slice.
-#'
-#' @export
-#' @examples
-#' # Create a pie chart with labels and apply facet_wrap with custom parameters after
-#' plot <- cluster_identities(object = seurat_object, meta_feature = "collection.date", plot_by = 'clusters', facet = FALSE, include_labels = TRUE)
-#' plot + facet_wrap(~ combined)
-cluster_identities <- function(object, meta_feature, plot_by = 'clusters', 
-                               facet = TRUE, include_labels = TRUE) {
-  # Check that the metadata feature is present in the object.
-  if (!(meta_feature %in% colnames(object@meta.data))){
-    return("Chosen metadata feature cannot be found in the seurat object provided.")
-  }
-  # Check that the plotting selection is correct.
-  if (!(plot_by == 'clusters' | plot_by == 'other')){
-    return("Incorrect plot_by variables.")
-  }
-  
-  
-  object_metadata <- object@meta.data
-  
-  # Get the column index for the feature selected and factorize the column
-  metadata_col <- grep(meta_feature, colnames(object_metadata))
-  object_metadata[,metadata_col] <- factor(object_metadata[,metadata_col])
-  
-  # Explicitly define the clusters as clusters
-  object_metadata$seurat_clusters <- paste("Cluster ", object_metadata$seurat_clusters)
-  
-  # Generate a ggplot with n number of pie charts, where n is the number of seurat clusters factors
-  if (plot_by == 'clusters'){
-    # Manipulate object_metadata to get a count and percentage of metadata_feature cells per cluster, and total cells per cluster.
-    object_metadata <- object_metadata %>%
-      group_by_("seurat_clusters", meta_feature) %>%
-      summarise(count = n()) %>%
-      mutate(count_per = count/sum(count)) %>%
-      group_by_('seurat_clusters') %>%
-      mutate(total=sum(count))
-    
-    object_metadata$combined <- do.call(paste, c(object_metadata[c(1,5)], sep = "\nTotal Cells = "))
-    
-    # Define the y-value for the label plot locations and rename the labelling column
-    label_locations <- object_metadata %>% 
-      mutate(
-        cs = rev(cumsum(rev(count_per))), 
-        pos = count_per/2 + lead(cs, 1),
-        pos = if_else(is.na(pos), count_per/2, pos))
-    colnames(label_locations)[3] <- 'label' 
-    
-    out_plot <- ggplot(data = object_metadata, 
-                       aes_string(x = factor(1), y = "count_per", fill = meta_feature))
-  }
-  
-  # Generate a ggplot with n number of pie charts, where n is the number of metadata_feature factors
-  else if (plot_by == 'other'){
-    # Manipulate object_metadata to get a count and percentage of clusters cells per metadata_feature, and total cells per metadata_feature.
-    object_metadata <- object_metadata %>%
-      group_by_("seurat_clusters", meta_feature) %>%
-      summarise(count = n()) %>%
-      group_by_(meta_feature) %>%
-      mutate(per = count/sum(count),
-             total = sum(count))
-    
-    object_metadata$combined <- do.call(paste, c(object_metadata[c(2,5)], sep = "\nTotal Cells = "))
-    
-    # Define the y-value for the label plot locations, convert the decimals to whole number %, and rename the labelling column 
-    label_locations <- object_metadata %>% 
-      mutate(
-        cs = rev(cumsum(rev(per))), 
-        pos = per/2 + lead(cs, 1),
-        pos = if_else(is.na(pos), per/2, pos))
-    label_locations$per <- paste(round(label_locations$per*100, 2), '%', sep='')
-    colnames(label_locations)[4] <- 'label' 
-    
-    out_plot <- ggplot(data = object_metadata, 
-                       aes(x = factor(1), y = per, fill=seurat_clusters))
-  }
-  
-  if (facet && include_labels){  
-    out_plot <- out_plot + 
-      geom_bar(stat = "identity", position = position_fill(), width = 1, color="white") +
-      geom_text_repel(data = label_locations, aes(y = pos, label = label), 
-                      force = 1, nudge_x = 1, min.segment.length = 0) + 
-      coord_polar("y", start = 0) +
-      facet_wrap(~ combined) +
-      theme_void() + 
-      theme(strip.text.x = element_text(face = "bold"))
-  }
-  else if (facet){
-    out_plot <- out_plot + 
-      geom_bar(stat = "identity", position = position_fill(), width = 1, color="white") +
-      coord_polar("y", start = 0) +
-      facet_wrap(~ combined) +
-      theme_void() + 
-      theme(strip.text.x = element_text(face = "bold"))
-  }
-  else if (include_labels){
-    out_plot <- out_plot + 
-      geom_bar(stat = "identity", position = position_fill(), width = 1, color="white") +
-      geom_text_repel(data = label_locations, aes(y = pos, label = label), 
-                      force = 1, nudge_x = 1, min.segment.length = 0) + 
-      coord_polar("y", start = 0) +
-      theme_void() + 
-      theme(strip.text.x = element_text(face = "bold"))
-  }
-  else{
-    out_plot <- out_plot + 
-      geom_bar(stat = "identity", position = position_fill(), width = 1, color="white") +
-      coord_polar("y", start = 0) +
-      theme_void() + 
-      theme(strip.text.x = element_text(face = "bold"))
-  }
-  
-  out_plot
-}

@@ -20,3 +20,6 @@ Spread abundance by a column. Take a data.frame from a sleuth object
 target_ids and the columns are the sample ids. The values are the variable
 you are "spreading" on.
 }
+\examples{
+spread_abundance_by(abundance_df, "est_counts")
+}

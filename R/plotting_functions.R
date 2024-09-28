@@ -1,26 +1,3 @@
-# Figure out what this is
-by_plot <- function(sleuth_obj, units = 'est_counts') {
-  est_count_matrix <- sleuth:::spread_abundance_by(sleuth_obj$obs_norm_filt, units, sleuth_obj$sample_to_covariates$sample)
-  pca <- prcomp(t(est_count_matrix))
-  plot_vector_length <- sqrt((pca$rotation[, 1] ^ 2) + (pca$rotation[, 2] ^ 2))
-  
-  # Highlight the ten longest
-  keep <- names(tail(sort(plot_vector_length), 10))
-  n <- rownames(pca$rotation)
-  pca$rotation[!(rownames(pca$rotation) %in% keep), ] <- c(0)
-  
-  # Add gene name to the loadings viz of available
-  if (!is.null(sleuth_obj$target_mapping)) {
-    t2g <- sleuth_obj$target_mapping
-    rownames(t2g) <- t2g$target_id
-    rownames(pca$rotation) <- lapply(n, function(x) {
-      ifelse(x %in% keep, paste0(x, "-", t2g[x, 2]), ".")})
-  }
-  autoplot(pca, data = t(est_count_matrix), label = TRUE, shape = FALSE, 
-           loadings = TRUE, loadings.label = TRUE, loadings.label.size = 3, 
-           loadings.label.vjust = 1.7)
-}
-
 #' Generate a volcano plot from a data frame containing a gene name, q-value, and fold change with user-selected cutoffs
 #' and title.
 #'
@@ -109,12 +86,13 @@ volc_plot <- function(df, labels = FALSE, label_column_name = "external_gene_nam
 #' @param var a character array of length one. The variable for which to get "spread" on (e.g. "est_counts").
 #'
 #' @export
+#' @examples
+#' spread_abundance_by(abundance_df, "est_counts")
 spread_abundance_by <- function(abund, var, which_order) {
-  # var <- lazyeval::lazy(var)
   abund <- data.table::as.data.table(abund)
-  var_spread <-
-    data.table::dcast(abund, target_id ~ sample, value.var = var)
-  # there is a discrepancy between data table's sorting of character vectors
+  var_spread <- data.table::dcast(abund, target_id ~ sample, value.var = var)
+  
+  # There is a discrepancy between data table's sorting of character vectors
   # and how tidyr previously (or the order function) sorts character vectors
   # so next step is needed to make sure the order is correct
   var_spread <- var_spread[order(var_spread$target_id), ]
@@ -150,8 +128,7 @@ self_plot_pca <-function(obj, pc_x = 1L, pc_y = 2L, units = "est_counts",
     color_by <- sym(color_by)
   }
   
-  mat <- spread_abundance_by(obj$obs_norm_filt, units,
-                             obj$sample_to_covariates$sample)
+  mat <- spread_abundance_by(obj$obs_norm_filt, units, obj$sample_to_covariates$sample)
   
   pca_res <- prcomp(t(mat))
   df <- as.data.frame(pca_res$x[, c(pc_x, pc_y)])
@@ -164,7 +141,6 @@ self_plot_pca <-function(obj, pc_x = 1L, pc_y = 2L, units = "est_counts",
   pc_2 <- paste0("PC2 ", "(", round(PCpc[2], 2), "%)")
   
   df <- dplyr::left_join(df, obj$sample_to_covariates, by = "sample")
-  print(df)
   
   if (show_legend) {
     plt <- ggplot(df, aes(PC1, PC2, colour = !!color_by, label = sample)) +
@@ -190,23 +166,10 @@ self_plot_pca <-function(obj, pc_x = 1L, pc_y = 2L, units = "est_counts",
   
   if (auto_save) {
     if (scaled) {
-      ggsave(
-        "figure1.png",
-        dpi = 300,
-        dev = "png",
-        height = PCpc[2] / 5,
-        width = PCpc[1] / 5,
-        units = "in"
-      )
-    } else {
-      ggsave(
-        "figure1.png",
-        dpi = 300,
-        dev = "png",
-        height = 4.5,
-        width = 6,
-        units = "in"
-      )
+      ggsave("figure1.png", dpi = 300, dev = "png", height = PCpc[2] / 5, width = PCpc[1] / 5, units = "in")
+    } 
+    else {
+      ggsave("figure1.png", dpi = 300, dev = "png", height = 4.5, width = 6, units = "in")
     }
   }
   else {
@@ -244,7 +207,7 @@ isoform_boxplot <- function(kruskal_result, graph_name = "Sample Plot Name") {
 #' @param iqf A numeric value between 0 and 1 (inclusive) to denote the quantile of data to display. Defaults to 0, which displays all data.
 #' @param test The sleuth test to be analyzed using sleuth_results, can be either "wt" or "lrt". Defaults to "wt".
 #' @param sig_marker_values A vector of values that should be used as a cutoff for significance labelling. Defaults to .05, .01, and .001.
-#' @param sig_markers Markers of signifigance. Defaults to \*, \*\*, \*\*\*.
+#' @param sig_markers Markers of significance. Defaults to \*, \*\*, \*\*\*.
 #' @param grouping_colours A list of groups and the associated level-colour pairs. See example for syntax. Defaults to empty list.
 #' @param boxplot A Boolean value that indicates whether a box plot of scaled transcripts should be displayed.
 #' @param clusterRows A Boolean value that indicates whether the rows should be clustered.
@@ -258,411 +221,254 @@ heatmap_plot <- function(sleuth_obj, genes, q_max = .05, test = "wt", iqf = 0,
            sig_marker_values = c(.05, .01, .001), sig_markers = c("*", "**", "***"),
            grouping_colours = list(), plot_title = "Sleuth Heatmap", boxplot = TRUE,
            clusterRows = FALSE, clusterColumn = FALSE) {
-    # Retrieve the scaled transcript counts for the set of genes passed to the function
-    scaled_transcript_counts <- filtered_scaled_transcript_counts(sleuth_obj = sleuth_obj, genes = genes)
+  # Retrieve the scaled transcript counts for the set of genes passed to the function
+  scaled_transcript_counts <- filtered_scaled_transcript_counts(sleuth_obj = sleuth_obj, genes = genes)
+  
+  # Take the scaled_transcript_counts and merge 
+  if (sleuth_obj$gene_mode == TRUE) {
+    scaled_transcript_counts <- aggregate(est_counts ~ ext_gene + sample, scaled_transcript_counts, mean)
     
-    # Take the scaled_transcript_counts and
-    if (sleuth_obj$gene_mode == TRUE) {
-      scaled_transcript_counts <- aggregate(est_counts ~ ext_gene + sample, scaled_transcript_counts, mean)
+    # Dcast the scaled_transcript_counts to make the columns the sample names, rows the transcript ids, and the cells the est_count values
+    scaled_transcript_counts <- dcast(scaled_transcript_counts, ext_gene ~ sample, value.var = "est_counts")
+    rownames(scaled_transcript_counts) <- scaled_transcript_counts$ext_gene
+  }
+  else {
+    # Merge the ext_gene name with the transcripts.
+    scaled_transcript_counts$target_id <- paste(scaled_transcript_counts$ext_gene,
+                                                scaled_transcript_counts$target_id,
+                                                sep = " - ")
+    
+    # Dcast the scaled_transcript_counts to make the columns the sample names, rows the transcript ids, and the cells the est_count values
+    scaled_transcript_counts <- dcast(scaled_transcript_counts, target_id ~ sample, value.var = "est_counts")
+    rownames(scaled_transcript_counts) <- scaled_transcript_counts$target_id
+  }
+  
+  # Remove an extra column created from the dcast that contains the transcript ids,
+  # take the log2 of the est_counts to plot them in more a representative way,
+  # remove the infinite values that occur when taking the log of a zero value,
+  # and convert from a df to a matrix.
+  scaled_transcript_counts <- scaled_transcript_counts[-1]
+  scaled_transcript_counts <- log2(scaled_transcript_counts)
+  scaled_transcript_counts[sapply(scaled_transcript_counts, is.infinite)] <- NA
+  scaled_transcript_counts <- as.matrix(scaled_transcript_counts)
+  
+  # Calculate the quantile value based on all the est_counts for every transcript
+  # for the selected gene with a probability of the user selected iqf parameter.
+  # Remove all the transcripts that do not have an average est_count that is
+  # greater than the quant_val.
+  if (iqf > 0) {
+    transcript_mean <- apply(scaled_transcript_counts, 1, function(v) mean(as.numeric(v), na.rm = TRUE))
+    quant_val <- quantile(scaled_transcript_counts, probs = iqf, na.rm = TRUE)
+    scaled_transcript_counts <- scaled_transcript_counts[rownames(scaled_transcript_counts) %in% c(names(transcript_mean[transcript_mean > quant_val])), ]
+  }
+  
+  # Gather the differentially expressed transcripts after running a wt or lrt
+  all_results <- sleuth_object_result(sleuth_obj = sleuth_obj, all_data = FALSE, 
+                                      sig_data = FALSE, single_df = TRUE,
+                                      retrived_from_model = TRUE, test = test)
+  
+  # Subset all the results to the genes/transcripts of interest
+  if (sleuth_obj$gene_mode == TRUE) {
+    all_results <- all_results[all_results$target_id %in% genes, ]
+  }
+  else {
+    all_results <- all_results[all_results$ext_gene %in% genes, ]
+    all_results$target_id <- paste(all_results$ext_gene, all_results$target_id, sep = " - ")
+  }
+  
+  # Apply a q-value based cutoff if the q_value is not a boolean value.
+  if (is.numeric(q_max)) {
+    all_results <- fdr_cutoff(all_results, q_cutoff = q_max)
+  }
+  
+  # Obtain the q-value per gene/transcript
+  transcript_p_val <- dcast(all_results, target_id ~ models, value.var = "qval", 
+                            fun.aggregate = sum)
+  rownames(transcript_p_val) <- transcript_p_val$target_id
+  transcript_p_val <- transcript_p_val[-1]
+  
+  # Merge the transcript q-values and all gene/transcripts
+  transcript_p_val <- merge(transcript_p_val, scaled_transcript_counts, 
+                            by = "row.names", all.y = TRUE)
+  rownames(transcript_p_val) <- transcript_p_val$Row.names
+  transcript_p_val <- transcript_p_val[2:(length(unique(all_results$models)) + 1)]
+  transcript_p_val[transcript_p_val == 0] <- NA
+  
+  # Check the following 3 lines of code, with gene_agg FALSE
+  transcript_p_val$spare <- NA
+  transcript_p_val <- transcript_p_val[rowSums(is.na(transcript_p_val)) != ncol(transcript_p_val), ]
+  transcript_p_val <- transcript_p_val[1:(ncol(transcript_p_val) - 1)]
+  scaled_transcript_counts <- scaled_transcript_counts[(rownames(scaled_transcript_counts) %in% rownames(transcript_p_val)), ]
+  scaled_transcript_count_matrix <- as.matrix(scaled_transcript_counts)
+  
+  # Heatmap Annotation Construction
+  ht_opt(legend_border = "black", heatmap_border = TRUE, annotation_border = TRUE)
+  
+  top_anno_df <- sleuth_obj$sample_to_covariates[, 1:ncol(sleuth_obj$sample_to_covariates)]
+  top_anno_df <- top_anno_df[order(top_anno_df[, 1]), ]
+  top_anno_df <- top_anno_df[-1]
+  if (length(grouping_colours) == 0) {
+    ha_top <- HeatmapAnnotation(df = top_anno_df)
+  }
+  else {
+    ha_top <- HeatmapAnnotation(df = top_anno_df, col = grouping_colours)
+  }
+  
+  # Generate the gene significance Heatmap annotation with asterisk.
+  qvalue_col_fun <- colorRamp2(c(0, 1), c("white", "white"))
+  model_names <- letters[1:length(colnames(transcript_p_val))]
+  transcript_p_val[transcript_p_val > max(attributes(qvalue_col_fun)$breaks)] <- NA
+  
+  # Determine what symbols should be assigned to the significant markers
+  pch <- transcript_p_val
+  annotation_symbol <- letters[1:length(sig_marker_values)]
+  sig_marker_values <- sort(sig_marker_values)
+  pch[pch > max(sig_marker_values)] <- NA
+  for (cutoff in sig_marker_values) {
+    pch[pch < as.numeric(cutoff)] <- annotation_symbol[match(cutoff, sig_marker_values)]
+  }
+  
+  # Make a matrix that contains the markers of significance based on the chosen
+  # annotation and cutoffs.
+  annotations <- na.exclude(as.character(unique(unlist(pch))))
+  annotations <- sort(annotations)
+  sig_markers <- sort(sig_markers, decreasing = TRUE)
+  for (anno in annotations) {
+    pch[pch == anno] <- sig_markers[match(anno, annotations)]
+  }
+  
+  # Create the model factor based significance
+  for (model in colnames(transcript_p_val)) {
+    if (model != "(Intercept)") {
+      letter_index <- match(model, colnames(transcript_p_val))
+      letter <- model_names[letter_index]
       
-      # Dcast the scaled_transcript_counts to make the columns the sample names, rows the transcript ids, and the cells the est_count values
-      scaled_transcript_counts <- dcast(scaled_transcript_counts, ext_gene ~ sample, value.var = "est_counts")
-      rownames(scaled_transcript_counts) <- scaled_transcript_counts$ext_gene
-    }
-    else {
-      # Merge the ext_gene name with the transcripts.
-      scaled_transcript_counts$target_id <-
-        paste(scaled_transcript_counts$ext_gene,
-              scaled_transcript_counts$target_id,
-              sep = " - ")
+      ha_temp <- HeatmapAnnotation(model = anno_simple(transcript_p_val[model],
+                                                       col = qvalue_col_fun,
+                                                       pch = as.matrix(pch[model]),
+                                                       pt_size = unit(1, "snpc") * 0.7,
+                                                       width = max_text_width(sig_markers) * 1.2,
+                                                       na_col = "white",
+                                                       border = TRUE), 
+                                   annotation_label = model,
+                                   which = "row")
       
-      # Dcast the scaled_transcript_counts to make the columns the sample names, rows the transcript ids, and the cells the est_count values
-      scaled_transcript_counts <-
-        dcast(scaled_transcript_counts, target_id ~ sample, value.var = "est_counts")
-      rownames(scaled_transcript_counts) <-
-        scaled_transcript_counts$target_id
-    }
-    
-    # Remove an extra column created from the dcast that contains the transcript ids,
-    # take the log2 of the est_counts to plot them in more a representative way,
-    # remove the infinite values that occur when taking the log of a zero value,
-    # and convert from a df to a matrix.
-    scaled_transcript_counts <- scaled_transcript_counts[-1]
-    scaled_transcript_counts <- log2(scaled_transcript_counts)
-    scaled_transcript_counts[sapply(scaled_transcript_counts, is.infinite)] <-
-      NA
-    
-    # Calculate the quantile value based on all the est_counts for every transcript
-    # for the selected gene with a probability of the user selected iqf parameter.
-    # Remove all the transcripts that do not have an average est_count that is
-    # greater than the quant_val
-    if (iqf > 0) {
-      transcript_mean <-
-        apply(scaled_transcript_counts, 1, function(v)
-          mean(as.numeric(v), na.rm = TRUE))
-      quant_val <-
-        quantile(scaled_transcript_counts,
-                 probs = iqf,
-                 na.rm = TRUE)
-      scaled_transcript_counts <-
-        scaled_transcript_counts[rownames(scaled_transcript_counts) %in% c(names(transcript_mean[transcript_mean > quant_val])), ]
-    }
-    
-    # Gather the differentially expressed transcripts after running a wt or lrt
-    all_results <-
-      sleuth_object_result(
-        sleuth_obj = sleuth_obj,
-        all_data = FALSE,
-        sig_data = FALSE,
-        single_df = TRUE,
-        retrived_from_model = TRUE,
-        test = test
-      )
-    
-    if (sleuth_obj$gene_mode == TRUE) {
-      all_results <- all_results[all_results$target_id %in% genes, ]
-    }
-    else {
-      all_results <- all_results[all_results$ext_gene %in% genes, ]
-      all_results$target_id <-
-        paste(all_results$ext_gene, all_results$target_id, sep = " - ")
-    }
-    
-    # Apply a q-value based cutoff if the q_value is not a boolean value.
-    if (is.numeric(q_max)) {
-      all_results <- fdr_cutoff(all_results, q_cutoff = q_max)
-    }
-    
-    # Obtain the q-value per transcript.
-    transcript_p_val <-
-      dcast(all_results,
-            target_id ~ models,
-            value.var = "qval",
-            fun.aggregate = sum)
-    rownames(transcript_p_val) <- transcript_p_val$target_id
-    transcript_p_val <- transcript_p_val[-1]
-    
-    # Merge the transcript q-values and all transcripts
-    transcript_p_val <-
-      merge(transcript_p_val,
-            scaled_transcript_counts,
-            by = "row.names",
-            all.y = TRUE)
-    rownames(transcript_p_val) <- transcript_p_val$Row.names
-    transcript_p_val <-
-      transcript_p_val[2:(length(unique(all_results$models)) + 1)]
-    transcript_p_val[transcript_p_val == 0] <- NA
-    
-    # Check the following 3 lines of code, with gene_agg FALSE
-    transcript_p_val$spare <- NA
-    transcript_p_val <-
-      transcript_p_val[rowSums(is.na(transcript_p_val)) != ncol(transcript_p_val), ]
-    transcript_p_val <-
-      transcript_p_val[1:(ncol(transcript_p_val) - 1)]
-    scaled_transcript_counts <-
-      scaled_transcript_counts[(rownames(scaled_transcript_counts) %in% rownames(transcript_p_val)), ]
-    scaled_transcript_count_matrix <-
-      as.matrix(scaled_transcript_counts)
-    
-    # Heatmap Annotation Construction
-    ht_opt(
-      legend_border = "black",
-      heatmap_border = TRUE,
-      annotation_border = TRUE
-    )
-    
-    top_anno_df <-
-      sleuth_obj$sample_to_covariates[, 1:ncol(sleuth_obj$sample_to_covariates)]
-    top_anno_df <- top_anno_df[order(top_anno_df[, 1]), ]
-    top_anno_df <- top_anno_df[-1]
-    if (length(grouping_colours) == 0) {
-      ha_top <- HeatmapAnnotation(df = top_anno_df)
-    }
-    else {
-      ha_top <-
-        HeatmapAnnotation(df = top_anno_df, col = grouping_colours)
-    }
-    
-    # Generate gene significance heatmap annotation with asterisk.
-    qvalue_col_fun <- colorRamp2(c(0, 1), c("white", "white"))
-    model_names <- letters[1:length(colnames(transcript_p_val))]
-    transcript_p_val[transcript_p_val > max(attributes(qvalue_col_fun)$breaks)] <-
-      NA
-    
-    # Determine what symbols should be assigned to the significant markers
-    pch <- transcript_p_val
-    annotation_symbol <- letters[1:length(sig_marker_values)]
-    sig_marker_values <- sort(sig_marker_values)
-    pch[pch > max(sig_marker_values)] <- NA
-    for (cutoff in sig_marker_values) {
-      pch[pch < as.numeric(cutoff)] <-
-        annotation_symbol[match(cutoff, sig_marker_values)]
-    }
-    
-    # Make a matrix that contains the markers of significance based on the chosen
-    # annotation and cutoffs.
-    annotations <- na.exclude(as.character(unique(unlist(pch))))
-    annotations <- sort(annotations)
-    sig_markers <- sort(sig_markers, decreasing = TRUE)
-    for (anno in annotations) {
-      pch[pch == anno] <- sig_markers[match(anno, annotations)]
-    }
-    
-    # Create the model factor based significance
-    for (model in colnames(transcript_p_val)) {
-      if (model != "(Intercept)") {
-        letter_index <- match(model, colnames(transcript_p_val))
-        letter <- model_names[letter_index]
-        
-        ha_temp <-
-          HeatmapAnnotation(
-            model = anno_simple(
-              transcript_p_val[model],
-              col = qvalue_col_fun,
-              pch = as.matrix(pch[model]),
-              pt_size = unit(1, "snpc") * 0.7,
-              width = max_text_width(sig_markers) * 1.2,
-              na_col = "white",
-              border = TRUE
-            ),
-            annotation_label = model,
-            which = "row"
-          )
-        
-        names(ha_temp@anno_list) <- letter
-        ha_temp@anno_list[[letter]]@name <- letter
-        
-        if (!exists("ha_right")) {
-          ha_right <- ha_temp
-        }
-        else {
-          ha_right <- c(ha_right, ha_temp)
-        }
-      }
-    }
-    
-    # Create a legend for the significant markers
-    legend_label <- paste("<", sig_marker_values, sep = " ")
-    lgd_sig <-
-      Legend(
-        labels = legend_label,
-        border = TRUE,
-        type = "points",
-        pch = sig_markers,
-        title = "q-Value Markers",
-        grid_width = max_text_width(sig_markers) * 1.2,
-        background = qvalue_col_fun(c(sig_marker_values))
-      )
-    
-    if (boxplot) {
-      boxplot_vals <-
-        apply(scaled_transcript_count_matrix, 1, function(v)
-          median(as.numeric(v), na.rm = TRUE))
-      boxplot_col <-
-        colorRamp2(c(min(boxplot_vals), max(boxplot_vals)), c("blue", "red"))
+      names(ha_temp@anno_list) <- letter
+      ha_temp@anno_list[[letter]]@name <- letter
       
-      if (sleuth_obj$gene_mode == TRUE) {
-        ha_left <-
-          rowAnnotation("Avg. Scaled Reads Per Base" = anno_boxplot(
-            scaled_transcript_count_matrix,
-            gp = gpar(fill = boxplot_col(boxplot_vals))
-          ))
-        if (clusterColumn){
-          ha_c <- Heatmap(
-          scaled_transcript_count_matrix,
-          name = "Scaled Reads Per Base",
-          rect_gp = gpar(col = "white", lwd = 1),
-          border_gp = gpar(col = "black"),
-          clustering_distance_rows = "pearson",
-          clustering_distance_columns = "pearson",
-          row_title = "Genes",
-          row_title_rot = 0,
-          row_names_max_width = max_text_width(
-            rownames(scaled_transcript_count_matrix),
-            gp = gpar(fontsize = 12)
-          ),
-          show_column_names = FALSE,
-          na_col = "black",
-          top_annotation = ha_top,
-          left_annotation = ha_left,
-          right_annotation = ha_right)
-        }
-        else{
-        ha_c <- Heatmap(
-        scaled_transcript_count_matrix,
-        name = "Scaled Reads Per Base",
-        rect_gp = gpar(col = "white", lwd = 1),
-        border_gp = gpar(col = "black"),
-        clustering_distance_rows = "pearson",
-        clustering_distance_columns = "pearson",
-        row_title = "Genes",
-        row_title_rot = 0,
-        row_names_max_width = max_text_width(
-          rownames(scaled_transcript_count_matrix),
-          gp = gpar(fontsize = 12)
-        ),
-        show_column_names = FALSE,
-        na_col = "black",
-        top_annotation = ha_top,
-        left_annotation = ha_left,
-        right_annotation = ha_right, cluster_columns = FALSE)
-        }
+      if (!exists("ha_right")) {
+        ha_right <- ha_temp
       }
       else {
-        ha_left <-
-          rowAnnotation("Scaled Transcript Est Counts" = anno_boxplot(
-            scaled_transcript_count_matrix,
-            gp = gpar(fill = boxplot_col(boxplot_vals))
-          ))
-        if (clusterColumn){
-        ha_c <- Heatmap(
-          scaled_transcript_count_matrix,
-          name = "Scaled Counts",
-          rect_gp = gpar(col = "white", lwd = 1),
-          border_gp = gpar(col = "black"),
-          clustering_distance_rows = "pearson",
-          clustering_distance_columns = "pearson",
-          row_title = "Transcripts",
-          row_title_rot = 0,
-          row_names_max_width = max_text_width(
-            rownames(scaled_transcript_count_matrix),
-            gp = gpar(fontsize = 12)
-          ),
-          show_column_names = FALSE,
-          na_col = "black",
-          top_annotation = ha_top,
-          left_annotation = ha_left,
-          right_annotation = ha_right
-        )
-        }
-        else{
-          ha_c <- Heatmap(
-            scaled_transcript_count_matrix,
-            name = "Scaled Counts",
-            rect_gp = gpar(col = "white", lwd = 1),
-            border_gp = gpar(col = "black"),
-            clustering_distance_rows = "pearson",
-            clustering_distance_columns = "pearson",
-            row_title = "Transcripts",
-            row_title_rot = 0,
-            row_names_max_width = max_text_width(
-              rownames(scaled_transcript_count_matrix),
-              gp = gpar(fontsize = 12)
-            ),
-            show_column_names = FALSE,
-            na_col = "black",
-            top_annotation = ha_top,
-            left_annotation = ha_left,
-            right_annotation = ha_right, cluster_columns = FALSE
-          )
-        }
+        ha_right <- c(ha_right, ha_temp)
       }
-    }
-    else {
-      if (sleuth_obj$gene_mode == TRUE) {
-        if (clusterColumn){
-        ha_c <- Heatmap(
-          scaled_transcript_count_matrix,
-          name = "Scaled Reads Per Base",
-          rect_gp = gpar(col = "white", lwd = 1),
-          border_gp = gpar(col = "black"),
-          clustering_distance_rows = "pearson",
-          clustering_distance_columns = "pearson",
-          row_title = "Genes",
-          row_title_rot = 0,
-          row_names_max_width = max_text_width(
-            rownames(scaled_transcript_count_matrix),
-            gp = gpar(fontsize = 12)
-          ),
-          show_column_names = FALSE,
-          na_col = "black",
-          top_annotation = ha_top,
-          left_annotation = ha_left,
-          right_annotation = ha_right
-        )
-        }
-        else{
-          ha_c <- Heatmap(
-            scaled_transcript_count_matrix,
-            name = "Scaled Reads Per Base",
-            rect_gp = gpar(col = "white", lwd = 1),
-            border_gp = gpar(col = "black"),
-            clustering_distance_rows = "pearson",
-            clustering_distance_columns = "pearson",
-            row_title = "Genes",
-            row_title_rot = 0,
-            row_names_max_width = max_text_width(
-              rownames(scaled_transcript_count_matrix),
-              gp = gpar(fontsize = 12)
-            ),
-            show_column_names = FALSE,
-            na_col = "black",
-            top_annotation = ha_top,
-            left_annotation = ha_left,
-            right_annotation = ha_right, cluster_columns = FALSE
-          )
-        }
-      }
-      else {
-        if (clusterColumn){
-        ha_c <- Heatmap(
-          scaled_transcript_count_matrix,
-          name = "Scaled Counts",
-          rect_gp = gpar(col = "white", lwd = 1),
-          border_gp = gpar(col = "black"),
-          clustering_distance_rows = "pearson",
-          clustering_distance_columns = "pearson",
-          row_title = "Transcripts",
-          row_title_rot = 0,
-          row_names_max_width = max_text_width(
-            rownames(scaled_transcript_count_matrix),
-            gp = gpar(fontsize = 12)
-          ),
-          show_column_names = FALSE,
-          na_col = "black",
-          top_annotation = ha_top,
-          right_annotation = ha_right
-        )
-        }
-        else{
-          ha_c <- Heatmap(
-            scaled_transcript_count_matrix,
-            name = "Scaled Counts",
-            rect_gp = gpar(col = "white", lwd = 1),
-            border_gp = gpar(col = "black"),
-            clustering_distance_rows = "pearson",
-            clustering_distance_columns = "pearson",
-            row_title = "Transcripts",
-            row_title_rot = 0,
-            row_names_max_width = max_text_width(
-              rownames(scaled_transcript_count_matrix),
-              gp = gpar(fontsize = 12)
-            ),
-            show_column_names = FALSE,
-            na_col = "black",
-            top_annotation = ha_top,
-            right_annotation = ha_right, cluster_columns = FALSE
-          )
-        }
-      }
-    }
-    if (clusterRows) {
-      draw(
-        ha_c,
-        annotation_legend_list = list(lgd_sig),
-        merge_legend = TRUE,
-        column_title = plot_title,
-        padding = unit(c(2, 20, 2, 2), "mm")
-      )
-    }
-    else{
-      draw(
-        ha_c,
-        annotation_legend_list = list(lgd_sig),
-        merge_legend = TRUE,
-        column_title = plot_title,
-        padding = unit(c(2, 20, 2, 2), "mm"),
-        cluster_rows = FALSE
-      )
     }
   }
+  
+  # Create a legend for the significant markers
+  legend_label <- paste("<", sig_marker_values, sep = " ")
+  lgd_sig <- Legend(labels = legend_label, border = TRUE, type = "points", 
+                    pch = sig_markers, title = "q-Value Markers",
+                    grid_width = max_text_width(sig_markers) * 1.2,
+                    background = qvalue_col_fun(c(sig_marker_values)))
+  
+  if (boxplot) {
+    boxplot_vals <- apply(scaled_transcript_count_matrix, 1, function(v) median(as.numeric(v), na.rm = TRUE))
+    boxplot_col <- colorRamp2(c(min(boxplot_vals), max(boxplot_vals)), c("blue", "red"))
+    
+    if (sleuth_obj$gene_mode == TRUE) {
+      ha_left <- rowAnnotation("Avg. Scaled Reads Per Base" = anno_boxplot(scaled_transcript_count_matrix, gp = gpar(fill = boxplot_col(boxplot_vals))))
+      if (clusterColumn){
+        ha_c <- Heatmap(scaled_transcript_count_matrix, name = "Scaled Reads Per Base",
+                        rect_gp = gpar(col = "white", lwd = 1), border_gp = gpar(col = "black"),
+                        clustering_distance_rows = "pearson", clustering_distance_columns = "pearson",
+                        row_title = "Genes", row_title_rot = 0, 
+                        row_names_max_width = max_text_width(rownames(scaled_transcript_count_matrix), gp = gpar(fontsize = 12)),
+                        show_column_names = FALSE, na_col = "black", top_annotation = ha_top,
+                        left_annotation = ha_left, right_annotation = ha_right)
+      }
+      else{
+        ha_c <- Heatmap(scaled_transcript_count_matrix, name = "Scaled Reads Per Base",
+                        rect_gp = gpar(col = "white", lwd = 1), border_gp = gpar(col = "black"),
+                        clustering_distance_rows = "pearson", clustering_distance_columns = "pearson",
+                        row_title = "Genes", row_title_rot = 0,
+                        row_names_max_width = max_text_width(rownames(scaled_transcript_count_matrix), gp = gpar(fontsize = 12)),
+                        show_column_names = FALSE, na_col = "black", top_annotation = ha_top,
+                        left_annotation = ha_left, right_annotation = ha_right, cluster_columns = FALSE)
+      }
+    }
+    else {
+      ha_left <- rowAnnotation("Scaled Transcript Est Counts" = anno_boxplot(scaled_transcript_count_matrix, gp = gpar(fill = boxplot_col(boxplot_vals))))
+      if (clusterColumn){
+        ha_c <- Heatmap(scaled_transcript_count_matrix, name = "Scaled Counts",
+                        rect_gp = gpar(col = "white", lwd = 1), border_gp = gpar(col = "black"),
+                        clustering_distance_rows = "pearson", clustering_distance_columns = "pearson",
+                        row_title = "Transcripts", row_title_rot = 0, 
+                        row_names_max_width = max_text_width(rownames(scaled_transcript_count_matrix), gp = gpar(fontsize = 12)),
+                        show_column_names = FALSE, na_col = "black", 
+                        top_annotation = ha_top, left_annotation = ha_left, right_annotation = ha_right)
+      }
+      else{
+        ha_c <- Heatmap(scaled_transcript_count_matrix, name = "Scaled Counts", 
+                        rect_gp = gpar(col = "white", lwd = 1), border_gp = gpar(col = "black"),
+                        clustering_distance_rows = "pearson", clustering_distance_columns = "pearson",
+                        row_title = "Transcripts", row_title_rot = 0,
+                        row_names_max_width = max_text_width(rownames(scaled_transcript_count_matrix), gp = gpar(fontsize = 12)),
+                        show_column_names = FALSE, na_col = "black", top_annotation = ha_top, left_annotation = ha_left, 
+                        right_annotation = ha_right, cluster_columns = FALSE
+        )
+      }
+    }
+  }
+  else {
+    if (sleuth_obj$gene_mode == TRUE) {
+      if (clusterColumn){
+        ha_c <- Heatmap(scaled_transcript_count_matrix, name = "Scaled Reads Per Base",
+                        rect_gp = gpar(col = "white", lwd = 1), border_gp = gpar(col = "black"),
+                        clustering_distance_rows = "pearson", clustering_distance_columns = "pearson",
+                        row_title = "Genes", row_title_rot = 0, 
+                        row_names_max_width = max_text_width(rownames(scaled_transcript_count_matrix), gp = gpar(fontsize = 12)),
+                        show_column_names = FALSE, na_col = "black",
+                        top_annotation = ha_top, left_annotation = ha_left, right_annotation = ha_right)
+      }
+      else{
+        ha_c <- Heatmap(scaled_transcript_count_matrix, name = "Scaled Reads Per Base",
+                        rect_gp = gpar(col = "white", lwd = 1), border_gp = gpar(col = "black"),
+                        clustering_distance_rows = "pearson", clustering_distance_columns = "pearson",
+                        row_title = "Genes", row_title_rot = 0,
+                        row_names_max_width = max_text_width(rownames(scaled_transcript_count_matrix), gp = gpar(fontsize = 12)),
+                        show_column_names = FALSE, na_col = "black",
+                        top_annotation = ha_top, left_annotation = ha_left, right_annotation = ha_right, cluster_columns = FALSE)
+      }
+    }
+    else {
+      if (clusterColumn){
+        ha_c <- Heatmap(scaled_transcript_count_matrix, name = "Scaled Counts",
+                        rect_gp = gpar(col = "white", lwd = 1), border_gp = gpar(col = "black"),
+                        clustering_distance_rows = "pearson", clustering_distance_columns = "pearson",
+                        row_title = "Transcripts", row_title_rot = 0,
+                        row_names_max_width = max_text_width(rownames(scaled_transcript_count_matrix), gp = gpar(fontsize = 12)),
+                        show_column_names = FALSE, na_col = "black", top_annotation = ha_top,
+                        right_annotation = ha_right)
+      }
+      else{
+        ha_c <- Heatmap(scaled_transcript_count_matrix, name = "Scaled Counts", 
+                        rect_gp = gpar(col = "white", lwd = 1), border_gp = gpar(col = "black"),
+                        clustering_distance_rows = "pearson", clustering_distance_columns = "pearson",
+                        row_title = "Transcripts", row_title_rot = 0,
+                        row_names_max_width = max_text_width(rownames(scaled_transcript_count_matrix), gp = gpar(fontsize = 12)),
+                        show_column_names = FALSE, na_col = "black", top_annotation = ha_top,
+                        right_annotation = ha_right, cluster_columns = FALSE)
+      }
+    }
+  }
+  if (clusterRows) {
+    draw(ha_c, annotation_legend_list = list(lgd_sig), merge_legend = TRUE,
+         column_title = plot_title, padding = unit(c(2, 20, 2, 2), "mm"))
+  }
+  else{
+    draw(ha_c, annotation_legend_list = list(lgd_sig), merge_legend = TRUE, 
+         column_title = plot_title, padding = unit(c(2, 20, 2, 2), "mm"), 
+         cluster_rows = FALSE)
+  }
+}

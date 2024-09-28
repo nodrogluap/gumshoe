@@ -2,7 +2,7 @@
 % Please edit documentation in R/sleuth_pre_processing.R
 \name{fdr_cutoff}
 \alias{fdr_cutoff}
-\title{Retrieve all target ids for a given data frame with a FDR less than or equal to the selected cutoff (default is .05).}
+\title{Retrieve all target id's for a given data frame with a FDR less than or equal to the selected cutoff (default is .05).}
 \usage{
 fdr_cutoff(sleuth_res, q_cutoff = 0.05, q_equal = FALSE)
 }
@@ -17,7 +17,7 @@ fdr_cutoff(sleuth_res, q_cutoff = 0.05, q_equal = FALSE)
 A list of target id's.
 }
 \description{
-Retrieve all target ids for a given data frame with a FDR less than or equal to the selected cutoff (default is .05).
+Retrieve all target id's for a given data frame with a FDR less than or equal to the selected cutoff (default is .05).
 }
 \examples{
 # Given a Sleuth object, return a data frame of all target id's with an FDR less than the cutoff value.

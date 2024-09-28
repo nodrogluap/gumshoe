@@ -16,7 +16,6 @@ Results of the Wald test assigned to the original Sleuth object input.
 Automated function to run all possible Wald tests on a given Sleuth object and the fitted model.
 }
 \examples{
-# Given a Sleuth object, run a wald test on all possible models as derived from the original formula used to run
-# sleuth_prep().
+# Given a Sleuth object, run a Wald test on all possible models as derived from the original formula used to run sleuth_fit().
 sleuth_test_wt(so)
 }

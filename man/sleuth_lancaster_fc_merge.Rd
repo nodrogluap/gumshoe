@@ -2,7 +2,7 @@
 % Please edit documentation in R/sleuth_pre_processing.R
 \name{sleuth_lancaster_fc_merge}
 \alias{sleuth_lancaster_fc_merge}
-\title{Provides the merged results of two sleuth objects, one ran with gene aggregation and the second with p-value aggregation. Provides a fold-change (b) with the lancaster method.}
+\title{Provides the merged results of two sleuth objects, one ran with gene aggregation and the second with p-value aggregation. Provides a fold-change (b) with the Lancaster method.}
 \usage{
 sleuth_lancaster_fc_merge(sleuth_obj_1, sleuth_obj_2, q_max = NULL)
 }
@@ -17,7 +17,7 @@ sleuth_lancaster_fc_merge(sleuth_obj_1, sleuth_obj_2, q_max = NULL)
 A data frame containing the combined information from the two sleuth objects.
 }
 \description{
-Provides the merged results of two sleuth objects, one ran with gene aggregation and the second with p-value aggregation. Provides a fold-change (b) with the lancaster method.
+Provides the merged results of two sleuth objects, one ran with gene aggregation and the second with p-value aggregation. Provides a fold-change (b) with the Lancaster method.
 }
 \examples{
 sleuth_lancaster_fc_merge(so_gene, so_pVal, q_max = .05)

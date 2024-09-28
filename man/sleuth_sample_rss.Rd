@@ -2,7 +2,7 @@
 % Please edit documentation in R/sleuth_pre_processing.R
 \name{sleuth_sample_rss}
 \alias{sleuth_sample_rss}
-\title{Retrieve the RSS value for a selected model name and formula based on the analysis_data data frame.}
+\title{Retrieve the RSS value per sample exclusion for a selected model name and formula based on the analysis_data data frame.}
 \usage{
 sleuth_sample_rss(
   data,
@@ -24,7 +24,7 @@ sleuth_sample_rss(
 A data frame that contains a list of the samples removed and the associated RSS value.
 }
 \description{
-Retrieve the RSS value for a selected model name and formula based on the analysis_data data frame.
+Retrieve the RSS value per sample exclusion for a selected model name and formula based on the analysis_data data frame.
 }
 \examples{
 # Given a data frame containing a metadata_file_name, metadata_file, model_name, and model_data (formulae) alongside

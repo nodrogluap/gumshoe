@@ -6,59 +6,47 @@
 #' @return Filtered scaled transcript counts for a specific set of genes.
 #' @export
 #' @examples
-#' # Given a Sleuth object, retrive the filtered scaled transcript counts for all the sample for a given gene list.
+#' # Given a Sleuth object, retrieve the filtered scaled transcript counts for all the sample for a given gene list.
 #' filtered_scaled_transcript_counts(so_nominal, "ABH1")
 filtered_scaled_transcript_counts <- function(sleuth_obj, genes) {
   if (sleuth_obj$gene_mode == TRUE) {
     # Obtain est_counts for all genes from the sleuth_obj
-    scaled_transcript_counts <-
-      sleuth_obj$obs_norm_filt %>% mutate(est_counts = scaled_reads_per_base * sleuth_obj$est_counts_sf)
+    scaled_transcript_counts <- sleuth_obj$obs_norm_filt %>% mutate(est_counts = scaled_reads_per_base * sleuth_obj$est_counts_sf)
     
     # Get all the transcripts for the specific gene
-    gene_transcript_df <-
-      sleuth_obj$target_mapping[sleuth_obj$target_mapping$ext_gene %in% genes,]
+    gene_transcript_df <- sleuth_obj$target_mapping[sleuth_obj$target_mapping$ext_gene %in% genes,]
     
     # Filter all the transcript est_counts based on the gene_transcript_df
-    scaled_transcript_counts <-
-      scaled_transcript_counts[scaled_transcript_counts$target_id %in% gene_transcript_df$ext_gene,]
+    scaled_transcript_counts <- scaled_transcript_counts[scaled_transcript_counts$target_id %in% gene_transcript_df$ext_gene,]
     colnames(scaled_transcript_counts)[2] <- "ext_gene"
-    scaled_transcript_counts <-
-      right_join(gene_transcript_df, scaled_transcript_counts, by = "ext_gene")
+    scaled_transcript_counts <- right_join(gene_transcript_df, scaled_transcript_counts, by = "ext_gene")
   }
   
   else {
     # If sleuth object gene agg is false:
     if (is.null(sleuth_obj$gene_column)) {
       # Obtain est_counts for all genes from the sleuth_obj
-      scaled_transcript_counts <-
-        sleuth_obj$obs_norm_filt %>% mutate(est_counts = est_counts * sleuth_obj$est_counts_sf)
+      scaled_transcript_counts <- sleuth_obj$obs_norm_filt %>% mutate(est_counts = est_counts * sleuth_obj$est_counts_sf)
       
       # Get all the transcripts for the specific gene
-      gene_transcript_df <-
-        sleuth_obj$target_mapping[sleuth_obj$target_mapping$ext_gene %in% genes,]
+      gene_transcript_df <- sleuth_obj$target_mapping[sleuth_obj$target_mapping$ext_gene %in% genes,]
       
       # Filter all the transcript est_counts based on the gene_transcript_df
-      scaled_transcript_counts <-
-        scaled_transcript_counts[scaled_transcript_counts$target_id %in% gene_transcript_df$target_id,]
-      scaled_transcript_counts <-
-        right_join(gene_transcript_df, scaled_transcript_counts, by = "target_id")
+      scaled_transcript_counts <- scaled_transcript_counts[scaled_transcript_counts$target_id %in% gene_transcript_df$target_id,]
+      scaled_transcript_counts <- right_join(gene_transcript_df, scaled_transcript_counts, by = "target_id")
     }
     
     else {
       # Obtain est_counts for all genes from the sleuth_obj
-      scaled_transcript_counts <-
-        sleuth_obj$obs_norm_filt %>% mutate(est_counts = est_counts * sleuth_obj$est_counts_sf)
+      scaled_transcript_counts <- sleuth_obj$obs_norm_filt %>% mutate(est_counts = est_counts * sleuth_obj$est_counts_sf)
       
       # Get all the transcripts for the specific gene
-      gene_transcript_df <-
-        sleuth_obj$target_mapping[sleuth_obj$target_mapping$ext_gene %in% genes,]
+      gene_transcript_df <- sleuth_obj$target_mapping[sleuth_obj$target_mapping$ext_gene %in% genes,]
       
       gene_transcript_df <- gene_transcript_df[-1]
       colnames(gene_transcript_df) <- c("target_id", "ext_gene")
-      scaled_transcript_counts <-
-        scaled_transcript_counts[scaled_transcript_counts$target_id %in% gene_transcript_df$target_id,]
-      scaled_transcript_counts <-
-        right_join(gene_transcript_df, scaled_transcript_counts, by = "target_id")
+      scaled_transcript_counts <- scaled_transcript_counts[scaled_transcript_counts$target_id %in% gene_transcript_df$target_id,]
+      scaled_transcript_counts <- right_join(gene_transcript_df, scaled_transcript_counts, by = "target_id")
     }
   }
   # Confirm that the transcripts based on the selected gene do exist in the sleuth_obj
@@ -90,43 +78,43 @@ filtered_scaled_transcript_counts <- function(sleuth_obj, genes) {
 #' # Given a Sleuth object, run the Kruskal-Wallis test for the est_counts by sample metadata.
 #' sleuth_kruskal_wallis(so_nominal, "ABH1", "tissue", iqf = 0.25)
 sleuth_kruskal_wallis <- function(sleuth_obj, gene, iqf = 0, threshold = 0.05) {
-    if (length(gene) >= 2) {
-      return("Ensure the gene parameter contains only a single gene.")
-    }
-    
-    # Retrieve the scaled transcript counts for the gene passed to the function
-    scaled_transcript_counts <- filtered_scaled_transcript_counts(sleuth_obj = sleuth_obj, genes = gene)
-    
-    # Create a new column with a factor groupings
-    s2c_df <- sleuth_obj$sample_to_covariates
-    colNames = colnames(s2c_df[, -1])
-    s2c_df$factor_group <- apply(s2c_df[, colNames, drop = F], MARGIN = 1, FUN = function(i) paste(i, collapse = "_"))
-    
-    # Merge the scaled transcript counts and the s2c_df
-    scaled_transcript_counts <- left_join(s2c_df, scaled_transcript_counts)
-    
-    # Create a named list with the format (transcript name, mean est_counts) for each transcript
-    transcript_count_mean <- list()
-    for (transcript in unique(scaled_transcript_counts$target_id)) {
-      count_mean <- mean(scaled_transcript_counts[scaled_transcript_counts$target_id == transcript, "est_counts"])
-      transcript_count_mean[[transcript]] <- c(transcript_count_mean[[transcript]], count_mean)
-    }
-    
-    # Calculate the quantile value based on all the est_counts for every transcript for the selected gene with a probability of the user selected iqf parameter
-    quant_val <- quantile(scaled_transcript_counts$est_counts, probs = iqf)
-    
-    # Remove all the transcripts that do not have an average est_count that is greater than the quant_val
-    scaled_transcript_counts <- scaled_transcript_counts[scaled_transcript_counts$target_id %in% c(names(transcript_count_mean[transcript_count_mean > quant_val])),]
-    
-    # Calculate the quantile based upon the user-selected iqf that the means that must be calculated must exceed
-    kw_stat <- kruskal.test(est_counts ~ factor_group, data = scaled_transcript_counts)
-    print(kw_stat)
-    
-    # Run the wilcox pairwise test
-    print(sleuth_wilcox_pairwise(scaled_transcript_counts, cutoff = threshold))
-    
-    return (scaled_transcript_counts)
+  if (length(gene) >= 2) {
+    return("Ensure the gene parameter contains only a single gene.")
   }
+  
+  # Retrieve the scaled transcript counts for the gene passed to the function
+  scaled_transcript_counts <- filtered_scaled_transcript_counts(sleuth_obj = sleuth_obj, genes = gene)
+  
+  # Create a new column with a factor groupings
+  s2c_df <- sleuth_obj$sample_to_covariates
+  colNames = colnames(s2c_df[, -1])
+  s2c_df$factor_group <- apply(s2c_df[, colNames, drop = F], MARGIN = 1, FUN = function(i) paste(i, collapse = "_"))
+  
+  # Merge the scaled transcript counts and the s2c_df
+  scaled_transcript_counts <- left_join(s2c_df, scaled_transcript_counts)
+  
+  # Create a named list with the format (transcript name, mean est_counts) for each transcript
+  transcript_count_mean <- list()
+  for (transcript in unique(scaled_transcript_counts$target_id)) {
+    count_mean <- mean(scaled_transcript_counts[scaled_transcript_counts$target_id == transcript, "est_counts"])
+    transcript_count_mean[[transcript]] <- c(transcript_count_mean[[transcript]], count_mean)
+  }
+  
+  # Calculate the quantile value based on all the est_counts for every transcript for the selected gene with a probability of the user selected iqf parameter
+  quant_val <- quantile(scaled_transcript_counts$est_counts, probs = iqf)
+  
+  # Remove all the transcripts that do not have an average est_count that is greater than the quant_val
+  scaled_transcript_counts <- scaled_transcript_counts[scaled_transcript_counts$target_id %in% c(names(transcript_count_mean[transcript_count_mean > quant_val])),]
+  
+  # Calculate the quantile based upon the user-selected iqf that the means that must be calculated must exceed
+  kw_stat <- kruskal.test(est_counts ~ factor_group, data = scaled_transcript_counts)
+  print(kw_stat)
+  
+  # Run the wilcox pairwise test
+  print(sleuth_wilcox_pairwise(scaled_transcript_counts, cutoff = threshold))
+  
+  return (scaled_transcript_counts)
+}
 
 #' Run a Wilcox pairwise comparison for a group across est_counts.
 #'
@@ -141,65 +129,9 @@ sleuth_kruskal_wallis <- function(sleuth_obj, gene, iqf = 0, threshold = 0.05) {
 sleuth_wilcox_pairwise <- function(data, cutoff = 0.05) {
   pw_w_test <- pairwise.wilcox.test(data$est_counts, data$factor_group, p.adjust.method = "BH")
   pw_w_test$p.value[which(is.nan(pw_w_test$p.value))] <- 1
+  assign("foo", pw_w_test, envir = .GlobalEnv)
   pw_w_test_letter <- multcompLetters(fullPTable(pw_w_test$p.value), compare = "<", 
                                       threshold = cutoff, Letters = letters, reverse = FALSE)
   print(pw_w_test)
   return(pw_w_test_letter$Letters)
 }
-
-#' Calculate and return the sum of the RSS values avalible for the model, model factors, and the lrt factors (if the LRT was ran).
-#'
-#' @param sleuth_obj An existing Sleuth object as generated by sleuth_prep() and fit by sleuth_fit().
-#' @param include_wald Boolean value to indicate if the wald test results should be returned. Default is FALSE.
-#' @param include_lrt Boolean value to indicate if the wald test results should be returned. Default is FALSE.
-#' @param return_df Boolean value to indicate if the result should be returned as a dataframe or a list. If FALSE, then return just the values.
-#'
-#' @return Dataframe or characters with all the RSS values for a given sleuth_object.
-#' @export
-#' @examples
-#' # Given a Sleuth object, retrieve the RSS values.
-#' sleuth_model_rss(so_nominal)
-sleuth_model_rss <- function(sleuth_obj, include_wald = FALSE, include_lrt = FALSE, return_df = FALSE) {
-    RSS_df <- data.frame(Parameters = "", RSS = 0)
-    
-    # Get the model RSS values
-    for (model in names(sleuth_obj$fits)) {
-      model_RSS <- sum(sleuth_obj$fits[[model]][["summary"]][, 2])
-      RSS_df[nrow(RSS_df) + 1,] <- c(model, model_RSS)
-    }
-    
-    # Check the RSS values for each test for each fit for all the factors
-    for (stat_test in names(sleuth_obj$tests)) {
-      if (include_wald) {
-        if (stat_test == "wt") {
-          for (extra_fits in names(sleuth_obj$tests$wt)) {
-            for (factor in names(sleuth_obj$tests$wt[[extra_fits]])) {
-              factor_name <- paste(stat_test, extra_fits, factor, sep = '_')
-              factor_RSS <- sum(sleuth_obj$tests$wt[[extra_fits]][[factor]][, 2])
-              RSS_df[nrow(RSS_df) + 1,] <- c(factor_name, factor_RSS)
-            }
-          }
-        }
-      }
-      
-      if (include_lrt) {
-        if (stat_test == "lrt") {
-          for (factor in names(sleuth_obj$tests$lrt)) {
-            factor_name <- paste(stat_test, factor, sep = '_')
-            factor_RSS <- sum(sleuth_obj$tests$lrt[[factor]][, 6])
-            RSS_df[nrow(RSS_df) + 1,] <- c(factor_name, factor_RSS)
-          }
-        }
-      }
-    }
-    
-    # Drop the extra row that was created at the beginning when making the RSS_df
-    RSS_df <- RSS_df[-1,]
-    
-    if (return_df) {
-      return(RSS_df)
-    }
-    else{
-      return(RSS_df[, 2])
-    }
-  }

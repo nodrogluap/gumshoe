@@ -32,7 +32,7 @@ heatmap_plot(
 
 \item{sig_marker_values}{A vector of values that should be used as a cutoff for significance labelling. Defaults to .05, .01, and .001.}
 
-\item{sig_markers}{Markers of signifigance. Defaults to \*, \*\*, \*\*\*.}
+\item{sig_markers}{Markers of significance. Defaults to \*, \*\*, \*\*\*.}
 
 \item{grouping_colours}{A list of groups and the associated level-colour pairs. See example for syntax. Defaults to empty list.}
 

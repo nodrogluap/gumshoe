@@ -2,8 +2,7 @@
 % Please edit documentation in R/sleuth_pre_processing.R
 \name{sleuth_test_lrt}
 \alias{sleuth_test_lrt}
-\title{Automated function to run all possible Likewise Ratio tests on a given Sleuth object with models derived from the
-original formula used to run sleuth_fit().}
+\title{Automated function to run all possible Likewise Ratio tests on a given Sleuth object and the fitted model.}
 \usage{
 sleuth_test_lrt(sleuth_obj)
 }
@@ -14,11 +13,9 @@ sleuth_test_lrt(sleuth_obj)
 Results of the Likewise Ratio test assigned to the original Sleuth object input.
 }
 \description{
-Automated function to run all possible Likewise Ratio tests on a given Sleuth object with models derived from the
-original formula used to run sleuth_fit().
+Automated function to run all possible Likewise Ratio tests on a given Sleuth object and the fitted model.
 }
 \examples{
-# Given a Sleuth object, run a likelihood ratio test on all possible models derived from the original formula used to
-# run sleuth_prep().
+# Given a Sleuth object, run a likelihood ratio test on all possible models derived from the original formula used to run sleuth_fit().
 sleuth_test_lrt(so)
 }

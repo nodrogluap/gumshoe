@@ -2,20 +2,20 @@
 % Please edit documentation in R/sleuth_pre_processing.R
 \name{sleuth_interpret}
 \alias{sleuth_interpret}
-\title{Automate the running of sleuth_prep and sleuth_fit on all provided metadata files and the associated models.}
+\title{Automated function to run sleuth_prep and sleuth_fit on all of the provided metadata files and associated models.}
 \usage{
 sleuth_interpret(data, num_core = 1)
 }
 \arguments{
-\item{data}{A data frame containing metadata file name, metadata tibble file, model names, and model formulae.}
+\item{data}{A data frame containing metadata file name, metadata tibble file, model names, model formulae, and arguments to pass to sleuth_prep()/sleuth_fit().}
 
 \item{num_core}{An integer for the number of cores to be used for sleuth_prep.}
 }
 \value{
-Sleuth object named using the associated metadata file name and processed with sleuth_prep() and sleuth_fit().
+Sleuth object processed with sleuth_prep() and sleuth_fit() and named using the associated metadata file name.
 }
 \description{
-Automate the running of sleuth_prep and sleuth_fit on all provided metadata files and the associated models.
+Automated function to run sleuth_prep and sleuth_fit on all of the provided metadata files and associated models.
 }
 \examples{
 # Given a sample data frame containing a metadata_file_name, metadata_file, model_name, and model_data (formulae),

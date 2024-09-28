@@ -18,6 +18,6 @@ Filtered scaled transcript counts for a specific set of genes.
 Return the scaled transcript counts for a set of genes.
 }
 \examples{
-# Given a Sleuth object, retrive the filtered scaled transcript counts for all the sample for a given gene list.
+# Given a Sleuth object, retrieve the filtered scaled transcript counts for all the sample for a given gene list.
 filtered_scaled_transcript_counts(so_nominal, "ABH1")
 }
